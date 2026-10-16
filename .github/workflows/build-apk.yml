@@ -34,7 +34,21 @@ jobs:
       - name: Build Debug APK
         working-directory: ./android-app
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee ../build.log
+        continue-on-error: true
+        id: build
+
+      - name: Report Errors
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "## Build Errors" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "(e: |FAILURE:|Error:)" ../build.log >> $GITHUB_STEP_SUMMARY || cat ../build.log | tail -n 80 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "=== BUILD LOG ==="
+          cat ../build.log | tail -n 80
+          exit 1
 
       - name: Prepare APK Output
         run: |
