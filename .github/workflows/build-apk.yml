@@ -32,9 +32,23 @@ jobs:
         run: chmod +x ./android-app/gradlew
 
       - name: Build Debug APK
+        id: gradle_build
         working-directory: ./android-app
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build_output.log
+        continue-on-error: true
+
+      - name: Diagnose Failure If Any
+        if: steps.gradle_build.outcome == 'failure'
+        run: |
+          echo "## ❌ Gradle Build Error Details" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -n 100 ./android-app/build_output.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "==================== BUILD ERROR LOG ===================="
+          tail -n 100 ./android-app/build_output.log
+          exit 1
 
       - name: Prepare APK Output
         run: |

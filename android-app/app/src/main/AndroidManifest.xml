@@ -62,7 +62,7 @@
             android:name=".RoboBackgroundService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync|microphone" />
+            android:foregroundServiceType="dataSync" />
 
         <!-- Optional Accessibility Service for automated WhatsApp dispatch -->
         <service
