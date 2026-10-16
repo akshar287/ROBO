@@ -1,11 +1,12 @@
-name: Build Android APK
+name: Build and Release Android APK
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -30,19 +31,34 @@ jobs:
       - name: Build Debug APK
         working-directory: ./android-app
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload Build Log if Failed
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-build-log
-          path: gradle-build.log
+      - name: Prepare APK Output
+        run: |
+          mkdir -p output-apk
+          find . -name "*.apk" -exec cp {} output-apk/ROBO-Agent.apk \;
+          ls -la output-apk/
 
       - name: Upload APK Artifact
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: ROBO-AI-app-debug
-          path: android-app/app/build/outputs/apk/debug/*.apk
+          name: ROBO-Agent-APK
+          path: output-apk/ROBO-Agent.apk
           retention-days: 30
+
+      - name: Publish Direct Download Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0-apk
+          name: "ROBO Mobile Agent v1.0.0 (Direct APK)"
+          body: |
+            ### 🤖 ROBO Android Agent - Direct APK Download
+            Download `ROBO-Agent.apk` directly on your mobile phone to install and test ROBO.
+            
+            **Features:**
+            - Continuous background service (Foreground Service with sticky notification)
+            - Multilingual voice support (Gujarati, Hindi, English)
+            - Zero-token WhatsApp and Calling support
+            - Automatic sync with Laptop Agent and Web Dashboard
+          files: output-apk/ROBO-Agent.apk
