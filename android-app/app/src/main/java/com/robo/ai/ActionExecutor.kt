@@ -47,16 +47,14 @@ object ActionExecutor {
     fun searchPlayStore(context: Context, query: String): Boolean {
         return try {
             val encodedQuery = URLEncoder.encode(query, "UTF-8")
-            val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=$encodedQuery")).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=$encodedQuery"))
+            marketIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(marketIntent)
             true
         } catch (e: Exception) {
             // Web fallback if Play Store app is unavailable
-            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=$query&c=apps")).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/search?q=$query&c=apps"))
+            webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(webIntent)
             true
         }
@@ -69,10 +67,9 @@ object ActionExecutor {
     fun dialPhone(context: Context, phoneNumber: String): Boolean {
         return try {
             val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
-            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone")).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
+            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
+            dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(dialIntent)
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error dialing phone: ${e.message}")
@@ -85,11 +82,10 @@ object ActionExecutor {
      */
     fun draftSms(context: Context, phoneNumber: String, message: String): Boolean {
         return try {
-            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phoneNumber")).apply {
-                putExtra("sms_body", message)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
+            val smsIntent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phoneNumber"))
+            smsIntent.putExtra("sms_body", message)
+            smsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(smsIntent)
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error drafting SMS: ${e.message}")
@@ -111,17 +107,15 @@ object ActionExecutor {
             }
             val encoded = URLEncoder.encode(message, "UTF-8")
             val uri = Uri.parse("whatsapp://send?phone=$formattedPhone&text=$encoded")
-            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
+            val waIntent = Intent(Intent.ACTION_VIEW, uri)
+            waIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(waIntent)
             true
         } catch (e: Exception) {
             // Web fallback
             val webUri = Uri.parse("https://api.whatsapp.com/send?phone=$phoneNumber&text=${URLEncoder.encode(message, "UTF-8")}")
-            val webIntent = Intent(Intent.ACTION_VIEW, webUri).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val webIntent = Intent(Intent.ACTION_VIEW, webUri)
+            webIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(webIntent)
             true
         }
@@ -135,11 +129,10 @@ object ActionExecutor {
         try {
             val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
             if (!powerManager.isIgnoringBatteryOptimizations(context.packageName)) {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
+                val optIntent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                optIntent.data = Uri.parse("package:${context.packageName}")
+                optIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(optIntent)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Could not open battery optimization settings: ${e.message}")
