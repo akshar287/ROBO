@@ -39,7 +39,7 @@ jobs:
         continue-on-error: true
         id: build
 
-      - name: Report Errors
+      - name: Report Errors If Any
         if: steps.build.outcome == 'failure'
         run: |
           echo "## Build Errors" >> $GITHUB_STEP_SUMMARY
@@ -51,12 +51,14 @@ jobs:
           exit 1
 
       - name: Prepare APK Output
+        if: steps.build.outcome == 'success'
         run: |
           mkdir -p output-apk
           find ./android-app -name "*.apk" -exec cp {} output-apk/ROBO-Agent.apk \;
           ls -la output-apk/
 
       - name: Upload APK Artifact
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ROBO-Agent-APK
@@ -65,7 +67,7 @@ jobs:
 
       - name: Publish Direct Download Release
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
+        if: steps.build.outcome == 'success' && github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0-apk
           name: "ROBO Mobile Agent v1.0.0 (Direct APK)"

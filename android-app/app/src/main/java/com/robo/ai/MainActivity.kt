@@ -77,22 +77,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         btnQuickCall.setOnClickListener {
-            speak("Calling Mummy on your phone.")
-            ActionExecutor.dialPhone(this, "+919876500001")
+            this@MainActivity.speak("Calling Mummy on your phone.")
+            ActionExecutor.dialPhone(this@MainActivity, "+919876500001")
         }
 
         btnQuickWhatsApp.setOnClickListener {
-            speak("Drafted WhatsApp message for Rahul. Opening WhatsApp.")
-            ActionExecutor.sendWhatsAppMessage(this, "+919876500003", "Hello Rahul! This is an automated message from ROBO AI.")
+            this@MainActivity.speak("Drafted WhatsApp message for Rahul. Opening WhatsApp.")
+            ActionExecutor.sendWhatsAppMessage(this@MainActivity, "+919876500003", "Hello Rahul! This is an automated message from ROBO AI.")
         }
 
         btnQuickPlayStore.setOnClickListener {
-            ActionExecutor.searchPlayStore(this, "WhatsApp Messenger")
+            ActionExecutor.searchPlayStore(this@MainActivity, "WhatsApp Messenger")
         }
 
         btnBatteryOpt.setOnClickListener {
-            ActionExecutor.requestBatteryOptimizationExemption(this)
-            Toast.makeText(this, "Please allow ROBO to run in background without battery restriction", Toast.LENGTH_LONG).show()
+            ActionExecutor.requestBatteryOptimizationExemption(this@MainActivity)
+            Toast.makeText(this@MainActivity, "Please allow ROBO to run in background without battery restriction", Toast.LENGTH_LONG).show()
         }
 
         btnStartService.setOnClickListener {
@@ -199,7 +199,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                     withContext(Dispatchers.Main) {
                         tvVoiceResult.text = "ROBO: $spokenResponse"
-                        speak(spokenResponse)
+                        this@MainActivity.speak(spokenResponse)
 
                         // Execute local action if returned
                         if (action == "dial_phone") {
@@ -219,10 +219,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     // Offline fallback: parse locally
                     val lower = text.lowercase()
                     if (lower.contains("ફોન") || lower.contains("call") || lower.contains("કૉલ") || lower.contains("फोन")) {
-                        speak("Calling Mummy now.")
+                        this@MainActivity.speak("Calling Mummy now.")
                         ActionExecutor.dialPhone(this@MainActivity, "+919876500001")
                     } else if (lower.contains("whatsapp") || lower.contains("મેસેજ") || lower.contains("मैसेज")) {
-                        speak("Drafting WhatsApp message for Rahul.")
+                        this@MainActivity.speak("Drafting WhatsApp message for Rahul.")
                         ActionExecutor.sendWhatsAppMessage(this@MainActivity, "+919876500003", "Hello from ROBO!")
                     }
                 }
@@ -247,7 +247,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    private fun speak(text: String) {
+    fun speak(text: String) {
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "robo_speech")
     }
 
