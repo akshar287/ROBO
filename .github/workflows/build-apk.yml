@@ -21,12 +21,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Configure Android SDK and Accept Licenses
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > ./android-app/local.properties
+          cat ./android-app/local.properties
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
       - name: Make Gradle Wrapper Executable
         run: chmod +x ./android-app/gradlew
-
-      - name: Accept Android SDK Licenses
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build Debug APK
         working-directory: ./android-app
@@ -36,7 +39,7 @@ jobs:
       - name: Prepare APK Output
         run: |
           mkdir -p output-apk
-          find . -name "*.apk" -exec cp {} output-apk/ROBO-Agent.apk \;
+          find ./android-app -name "*.apk" -exec cp {} output-apk/ROBO-Agent.apk \;
           ls -la output-apk/
 
       - name: Upload APK Artifact
@@ -54,11 +57,11 @@ jobs:
           name: "ROBO Mobile Agent v1.0.0 (Direct APK)"
           body: |
             ### 🤖 ROBO Android Agent - Direct APK Download
-            Download `ROBO-Agent.apk` directly on your mobile phone to install and test ROBO.
+            Download `ROBO-Agent.apk` directly on your mobile device to test ROBO.
             
             **Features:**
-            - Continuous background service (Foreground Service with sticky notification)
+            - Continuous background service
             - Multilingual voice support (Gujarati, Hindi, English)
             - Zero-token WhatsApp and Calling support
-            - Automatic sync with Laptop Agent and Web Dashboard
+            - Master ON/OFF sync with Laptop and Web Dashboard
           files: output-apk/ROBO-Agent.apk
