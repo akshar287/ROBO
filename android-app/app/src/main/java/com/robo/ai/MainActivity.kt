@@ -1,66 +1,37 @@
 package com.robo.ai
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
+import android.webkit.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.*
-import org.json.JSONObject
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.*
 
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
-    private lateinit var switchAgentState: SwitchCompat
-    private lateinit var tvStatusBadge: TextView
-    private lateinit var tvModeSubtitle: TextView
-    private lateinit var tvVoicePrompt: TextView
-    private lateinit var tvVoiceResult: TextView
-    private lateinit var btnMic: MaterialButton
-    private lateinit var etServerUrl: EditText
-    private lateinit var btnStartService: Button
-    private lateinit var btnQuickCall: Button
-    private lateinit var btnQuickWhatsApp: Button
-    private lateinit var btnQuickPlayStore: Button
-    private lateinit var btnBatteryOpt: Button
-
+    private lateinit var webView: WebView
     private var speechRecognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
     private val scope = CoroutineScope(Dispatchers.Main + Job())
 
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Initialize UI bindings
-        switchAgentState = findViewById(R.id.switchAgentState)
-        tvStatusBadge = findViewById(R.id.tvStatusBadge)
-        tvModeSubtitle = findViewById(R.id.tvModeSubtitle)
-        tvVoicePrompt = findViewById(R.id.tvVoicePrompt)
-        tvVoiceResult = findViewById(R.id.tvVoiceResult)
-        btnMic = findViewById(R.id.btnMic)
-        etServerUrl = findViewById(R.id.etServerUrl)
-        btnStartService = findViewById(R.id.btnStartBackgroundService)
-        btnQuickCall = findViewById(R.id.btnQuickCall)
-        btnQuickWhatsApp = findViewById(R.id.btnQuickWhatsApp)
-        btnQuickPlayStore = findViewById(R.id.btnQuickPlayStore)
-        btnBatteryOpt = findViewById(R.id.btnBatteryOptimization)
+        webView = findViewById(R.id.webView)
 
         // Setup TTS
         tts = TextToSpeech(this, this)
@@ -71,57 +42,107 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Setup Speech Recognizer
         setupSpeechRecognizer()
 
-        // Setup Button Listeners
-        btnMic.setOnClickListener {
-            startListening()
-        }
-
-        btnQuickCall.setOnClickListener {
-            this@MainActivity.speak("Calling Mummy on your phone.")
-            ActionExecutor.dialPhone(this@MainActivity, "+919876500001")
-        }
-
-        btnQuickWhatsApp.setOnClickListener {
-            this@MainActivity.speak("Drafted WhatsApp message for Rahul. Opening WhatsApp.")
-            ActionExecutor.sendWhatsAppMessage(this@MainActivity, "+919876500003", "Hello Rahul! This is an automated message from ROBO AI.")
-        }
-
-        btnQuickPlayStore.setOnClickListener {
-            ActionExecutor.searchPlayStore(this@MainActivity, "WhatsApp Messenger")
-        }
-
-        btnBatteryOpt.setOnClickListener {
-            ActionExecutor.requestBatteryOptimizationExemption(this@MainActivity)
-            Toast.makeText(this@MainActivity, "Please allow ROBO to run in background without battery restriction", Toast.LENGTH_LONG).show()
-        }
-
-        btnStartService.setOnClickListener {
-            startRoboService()
-        }
-
-        switchAgentState.setOnCheckedChangeListener { _, isChecked ->
-            val newState = if (isChecked) "ON" else "OFF"
-            tvModeSubtitle.text = if (isChecked) "Active across connected devices" else "ROBO paused"
-            tvStatusBadge.text = if (isChecked) "ONLINE" else "DISABLED"
-            tvStatusBadge.setTextColor(android.graphics.Color.parseColor(if (isChecked) "#10B981" else "#EF4444"))
-            updateBackendState(newState)
-        }
+        // Configure WebView
+        configureWebView()
 
         // Auto start background service
         startRoboService()
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun configureWebView() {
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            databaseEnabled = true
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            mediaPlaybackRequiresUserGesture = false
+            cacheMode = WebSettings.LOAD_DEFAULT
+        }
+
+        webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+            }
+        }
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                return super.onConsoleMessage(consoleMessage)
+            }
+        }
+
+        // Load full 19-screen master application
+        webView.loadUrl("file:///android_asset/www/index.html")
+    }
+
+    inner class AndroidBridge {
+        @JavascriptInterface
+        fun dialPhone(phoneNumber: String) {
+            runOnUiThread {
+                ActionExecutor.dialPhone(this@MainActivity, phoneNumber)
+            }
+        }
+
+        @JavascriptInterface
+        fun sendWhatsApp(phoneNumber: String, message: String) {
+            runOnUiThread {
+                ActionExecutor.sendWhatsAppMessage(this@MainActivity, phoneNumber, message)
+            }
+        }
+
+        @JavascriptInterface
+        fun searchPlayStore(query: String) {
+            runOnUiThread {
+                ActionExecutor.searchPlayStore(this@MainActivity, query)
+            }
+        }
+
+        @JavascriptInterface
+        fun openApp(appName: String) {
+            runOnUiThread {
+                ActionExecutor.openApp(this@MainActivity, appName)
+            }
+        }
+
+        @JavascriptInterface
+        fun speak(text: String) {
+            this@MainActivity.speak(text)
+        }
+
+        @JavascriptInterface
+        fun startVoice() {
+            runOnUiThread {
+                startListening()
+            }
+        }
+
+        @JavascriptInterface
+        fun showToast(msg: String) {
+            runOnUiThread {
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun startRoboService() {
-        val serverUrl = etServerUrl.text.toString().trim()
         val serviceIntent = Intent(this, RoboBackgroundService::class.java).apply {
-            putExtra("SERVER_URL", serverUrl)
+            putExtra("SERVER_URL", "ws://10.0.2.2:8000")
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
             startService(serviceIntent)
         }
-        Toast.makeText(this, "ROBO Background Service Started", Toast.LENGTH_SHORT).show()
     }
 
     private fun setupSpeechRecognizer() {
@@ -129,23 +150,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
                 setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {
-                        tvVoicePrompt.text = "Listening... Speak in Gujarati, Hindi, or English"
-                        btnMic.backgroundTintList = ContextCompat.getColorStateList(this@MainActivity, android.R.color.holo_red_light)
+                        runOnUiThread {
+                            webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('listening');", null)
+                        }
                     }
 
                     override fun onResults(results: Bundle?) {
                         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         if (!matches.isNullOrEmpty()) {
                             val recognizedText = matches[0]
-                            tvVoicePrompt.text = "Heard: \"$recognizedText\""
-                            processVoiceInput(recognizedText)
+                            runOnUiThread {
+                                val escaped = recognizedText.replace("'", "\\'")
+                                webView.evaluateJavascript("if (window.onSpeechResult) window.onSpeechResult('$escaped');", null)
+                            }
+                            this@MainActivity.speak("Understood: $recognizedText")
                         }
-                        btnMic.backgroundTintList = ContextCompat.getColorStateList(this@MainActivity, android.R.color.holo_blue_light)
                     }
 
                     override fun onError(error: Int) {
-                        tvVoicePrompt.text = "Microphone ready. Tap to speak."
-                        btnMic.backgroundTintList = ContextCompat.getColorStateList(this@MainActivity, android.R.color.holo_blue_light)
+                        runOnUiThread {
+                            webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('ready');", null)
+                        }
                     }
 
                     override fun onBeginningOfSpeech() {}
@@ -162,91 +187,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun startListening() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "gu-IN") // Can also accept hi-IN or en-IN
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "gu-IN")
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "gu-IN")
             putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak in Gujarati, Hindi, or English")
         }
         speechRecognizer?.startListening(intent)
-    }
-
-    private fun processVoiceInput(text: String) {
-        scope.launch(Dispatchers.IO) {
-            try {
-                // Post to Backend
-                val httpUrl = etServerUrl.text.toString().replace("ws://", "http://").replace("/ws/android", "")
-                val url = URL("$httpUrl/api/v1/voice/command")
-                val conn = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    setRequestProperty("Content-Type", "application/json")
-                    doOutput = true
-                    connectTimeout = 5000
-                }
-
-                val payload = JSONObject().apply {
-                    put("transcript", text)
-                    put("user_id", 1)
-                }
-
-                OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }
-
-                val responseCode = conn.responseCode
-                if (responseCode == 200) {
-                    val responseStr = conn.inputStream.bufferedReader().use { it.readText() }
-                    val jsonResponse = JSONObject(responseStr)
-                    val spokenResponse = jsonResponse.optString("spoken_response", "Task dispatched.")
-                    val action = jsonResponse.optString("action", "")
-
-                    withContext(Dispatchers.Main) {
-                        tvVoiceResult.text = "ROBO: $spokenResponse"
-                        this@MainActivity.speak(spokenResponse)
-
-                        // Execute local action if returned
-                        if (action == "dial_phone") {
-                            val params = jsonResponse.optJSONObject("parameters")
-                            val phone = params?.optString("phone_number") ?: "+919876543210"
-                            ActionExecutor.dialPhone(this@MainActivity, phone)
-                        } else if (action == "whatsapp_draft") {
-                            val params = jsonResponse.optJSONObject("parameters")
-                            val phone = params?.optString("phone_number") ?: "+919876543210"
-                            val msg = params?.optString("message") ?: "Hello!"
-                            ActionExecutor.sendWhatsAppMessage(this@MainActivity, phone, msg)
-                        }
-                        Unit
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    // Offline fallback: parse locally
-                    val lower = text.lowercase()
-                    if (lower.contains("ફોન") || lower.contains("call") || lower.contains("કૉલ") || lower.contains("फोन")) {
-                        this@MainActivity.speak("Calling Mummy now.")
-                        ActionExecutor.dialPhone(this@MainActivity, "+919876500001")
-                    } else if (lower.contains("whatsapp") || lower.contains("મેસેજ") || lower.contains("मैसेज")) {
-                        this@MainActivity.speak("Drafting WhatsApp message for Rahul.")
-                        ActionExecutor.sendWhatsAppMessage(this@MainActivity, "+919876500003", "Hello from ROBO!")
-                    }
-                    Unit
-                }
-            }
-        }
-    }
-
-    private fun updateBackendState(state: String) {
-        scope.launch(Dispatchers.IO) {
-            try {
-                val httpUrl = etServerUrl.text.toString().replace("ws://", "http://")
-                val url = URL("$httpUrl/api/v1/state/")
-                val conn = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    setRequestProperty("Content-Type", "application/json")
-                    doOutput = true
-                }
-                val payload = JSONObject().apply { put("state", state) }
-                OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }
-                conn.responseCode
-            } catch (e: Exception) {}
-        }
     }
 
     fun speak(text: String) {
@@ -264,8 +210,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun requestPermissionsIfNeeded() {
         val permissions = mutableListOf(
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.CALL_PHONE
+            Manifest.permission.RECORD_AUDIO
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
@@ -276,6 +221,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 100)
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
         }
     }
 
