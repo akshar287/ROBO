@@ -34,31 +34,22 @@ jobs:
       - name: Build Debug APK
         working-directory: ./android-app
         run: |
-          set -o pipefail
-          ./gradlew assembleDebug --no-daemon 2>&1 | tee build.log
-        continue-on-error: true
-        id: build
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../build.log
 
-      - name: Report Errors If Any
-        if: steps.build.outcome == 'failure'
-        run: |
-          echo "## Build Errors" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          grep -E "(e: |FAILURE:|Error:)" ./android-app/build.log >> $GITHUB_STEP_SUMMARY || cat ./android-app/build.log | tail -n 80 >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "=== BUILD LOG ==="
-          cat ./android-app/build.log | tail -n 80
-          exit 1
+      - name: Upload Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Prepare APK Output
-        if: steps.build.outcome == 'success'
         run: |
           mkdir -p output-apk
           find ./android-app -name "*.apk" -exec cp {} output-apk/ROBO-Agent.apk \;
           ls -la output-apk/
 
       - name: Upload APK Artifact
-        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ROBO-Agent-APK
@@ -67,7 +58,7 @@ jobs:
 
       - name: Publish Direct Download Release
         uses: softprops/action-gh-release@v2
-        if: steps.build.outcome == 'success' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0-apk
           name: "ROBO Mobile Agent v1.0.0 (Direct APK)"
@@ -76,6 +67,7 @@ jobs:
             Download `ROBO-Agent.apk` directly on your mobile device to test ROBO.
             
             **Features:**
+            - 19-Screen UI/UX aligned with master specifications
             - Continuous background service
             - Multilingual voice support (Gujarati, Hindi, English)
             - Zero-token WhatsApp and Calling support

@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             val newState = if (isChecked) "ON" else "OFF"
             tvModeSubtitle.text = if (isChecked) "Active across connected devices" else "ROBO paused"
             tvStatusBadge.text = if (isChecked) "ONLINE" else "DISABLED"
-            tvStatusBadge.setTextColor(if (isChecked) 0xFF10B981.toInt() else 0xFFEF4444.toInt())
+            tvStatusBadge.setTextColor(android.graphics.Color.parseColor(if (isChecked) "#10B981" else "#EF4444"))
             updateBackendState(newState)
         }
 
