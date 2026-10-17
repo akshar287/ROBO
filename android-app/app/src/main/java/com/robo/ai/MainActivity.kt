@@ -212,6 +212,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                             val msg = params?.optString("message") ?: "Hello!"
                             ActionExecutor.sendWhatsAppMessage(this@MainActivity, phone, msg)
                         }
+                        Unit
                     }
                 }
             } catch (e: Exception) {
@@ -225,6 +226,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         this@MainActivity.speak("Drafting WhatsApp message for Rahul.")
                         ActionExecutor.sendWhatsAppMessage(this@MainActivity, "+919876500003", "Hello from ROBO!")
                     }
+                    Unit
                 }
             }
         }
