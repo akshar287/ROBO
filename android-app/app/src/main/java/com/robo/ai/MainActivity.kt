@@ -56,7 +56,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun configureWebView() {
         // Initialize modern WebViewAssetLoader mapped to root www directory
         assetLoader = WebViewAssetLoader.Builder()
-            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this, "www"))
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
 
