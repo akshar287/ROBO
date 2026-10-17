@@ -44,6 +44,7 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-service:2.7.0")
+    implementation("androidx.webkit:webkit:1.10.0")
 
     // Coroutines & Concurrency
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")

@@ -4,7 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.*
 import java.util.*
 
@@ -25,6 +26,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var speechRecognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
     private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private lateinit var assetLoader: WebViewAssetLoader
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +44,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Setup Speech Recognizer
         setupSpeechRecognizer()
 
-        // Configure WebView
+        // Configure WebView with WebViewAssetLoader
         configureWebView()
 
         // Auto start background service
@@ -51,6 +53,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configureWebView() {
+        // Initialize modern WebViewAssetLoader to safely serve HTML, CSS & JS with https scheme
+        assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -66,12 +73,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
 
         webView.webViewClient = object : WebViewClient() {
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                super.onPageStarted(view, url, favicon)
-            }
-
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(request.url)
             }
         }
 
@@ -81,8 +87,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
 
-        // Load full 19-screen master application
-        webView.loadUrl("file:///android_asset/www/index.html")
+        // Load full 19-screen master application via HTTPS asset domain
+        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
     }
 
     inner class AndroidBridge {

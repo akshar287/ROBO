@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Screen1Splash from "@/components/screens/Screen1Splash";
 import Screen2Onboarding from "@/components/screens/Screen2Onboarding";
 import Screen3Login from "@/components/screens/Screen3Login";
@@ -20,19 +20,18 @@ import Screen16Settings from "@/components/screens/Screen16Settings";
 import Screen17TaskHistory from "@/components/screens/Screen17TaskHistory";
 import Screen18About from "@/components/screens/Screen18About";
 import {
-  Wifi,
-  Battery,
-  Signal,
-  Sun,
-  Moon,
+  Layers,
   ChevronLeft,
   ChevronRight,
-  Layers,
+  Sun,
+  Moon,
+  X,
 } from "lucide-react";
 
 export default function AppMaster() {
-  const [currentScreen, setCurrentScreen] = useState<number>(7); // Default to Dashboard (Screen 7)
+  const [currentScreen, setCurrentScreen] = useState<number>(7); // Default to Main Dashboard
   const [isLightMode, setIsLightMode] = useState<boolean>(false);
+  const [showScreenDrawer, setShowScreenDrawer] = useState<boolean>(false);
 
   const screenNames = [
     { num: 1, name: "1. Splash Screen" },
@@ -63,172 +62,143 @@ export default function AppMaster() {
     } else {
       setCurrentScreen(screenNum);
     }
+    setShowScreenDrawer(false);
   };
 
   const toggleTheme = () => {
     setIsLightMode(!isLightMode);
   };
 
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 1:
+        return <Screen1Splash onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 2:
+        return <Screen2Onboarding onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 3:
+        return <Screen3Login onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 4:
+        return <Screen4ConnectPhone onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 5:
+        return <Screen5Permissions onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 6:
+        return <Screen6PhoneConnected onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 7:
+        return <Screen7Dashboard onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 8:
+        return <Screen8VoiceAssistant onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 9:
+        return <Screen9Chat onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 10:
+        return <Screen10WhatsAppReply onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 11:
+        return <Screen11NotificationAccess onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 12:
+        return <Screen12SelectedContacts onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 13:
+        return <Screen13CallScreen onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 14:
+        return <Screen14LaptopControl onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 15:
+        return <Screen15MyDevices onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 16:
+        return <Screen16Settings onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 17:
+        return <Screen17TaskHistory onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      case 18:
+        return <Screen18About onNavigate={handleNavigate} isLightMode={isLightMode} />;
+      default:
+        return <Screen7Dashboard onNavigate={handleNavigate} isLightMode={isLightMode} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-start p-3 sm:p-6 overflow-x-hidden">
-      {/* Top Controls & Screen Switcher Bar */}
-      <div className="w-full max-w-5xl mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0B1327]/90 border border-slate-800/80 backdrop-blur-md p-3.5 rounded-2xl shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-black text-slate-950 text-xs shadow-md">
-            R
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-white flex items-center gap-1.5">
-              <span>ROBO AI AGENT</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-mono">
-                19 Screens UI/UX
-              </span>
-            </h1>
-            <p className="text-[11px] text-slate-400">
-              Interactive high-fidelity mockup matching master specifications
-            </p>
-          </div>
-        </div>
-
-        {/* Screen Selector Dropdown & Quick Toggles */}
-        <div className="flex items-center gap-2 flex-wrap justify-center">
-          <button
-            onClick={() => handleNavigate(currentScreen > 1 ? currentScreen - 1 : 18)}
-            className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 active:scale-95 transition-all"
-            title="Previous Screen"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
-          <select
-            value={isLightMode && currentScreen === 7 ? 19 : currentScreen}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              if (val === 19) {
-                setIsLightMode(true);
-                setCurrentScreen(7);
-              } else {
-                if (val !== 7) setIsLightMode(false);
-                setCurrentScreen(val);
-              }
-            }}
-            className="bg-[#10192E] text-cyan-400 border border-cyan-500/40 rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer hover:border-cyan-400"
-          >
-            {screenNames.map((s) => (
-              <option key={s.num} value={s.num}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={() => handleNavigate(currentScreen < 18 ? currentScreen + 1 : 1)}
-            className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 active:scale-95 transition-all"
-            title="Next Screen"
-          >
-            <ChevronRight size={16} />
-          </button>
-
-          {/* Theme Switcher Button */}
-          <button
-            onClick={toggleTheme}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
-              isLightMode
-                ? "bg-amber-400/15 border-amber-400/40 text-amber-300"
-                : "bg-slate-800 border-slate-700 text-slate-300 hover:text-cyan-400"
-            }`}
-          >
-            {isLightMode ? <Sun size={14} /> : <Moon size={14} />}
-            <span>{isLightMode ? "Light" : "Dark"}</span>
-          </button>
-        </div>
+    <main
+      className={`w-full min-h-screen select-none font-sans transition-colors duration-300 ${
+        isLightMode ? "bg-slate-100 text-slate-900" : "bg-[#060A14] text-white"
+      }`}
+    >
+      {/* Active Screen View (Full Screen, Real Mobile Layout) */}
+      <div className="w-full min-h-screen flex flex-col justify-between max-w-md mx-auto relative overflow-hidden">
+        {renderScreen()}
       </div>
 
-      {/* Screen Quick-Pill Badges */}
-      <div className="w-full max-w-5xl mb-6 overflow-x-auto pb-2 scrollbar-none flex items-center gap-1.5 px-1">
-        {screenNames.map((s) => {
-          const isSelected =
-            s.num === 19 ? isLightMode && currentScreen === 7 : currentScreen === s.num && !isLightMode;
-          return (
-            <button
-              key={s.num}
-              onClick={() => handleNavigate(s.num)}
-              className={`whitespace-nowrap px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
-                isSelected
-                  ? "bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
-                  : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-              }`}
-            >
-              {s.name}
-            </button>
-          );
-        })}
+      {/* Discreet Floating Screen Switcher Pill */}
+      <div className="fixed bottom-3 right-3 z-50 flex items-center gap-1.5 bg-[#0F172A]/90 border border-cyan-500/30 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg shadow-black/50 text-xs">
+        <button
+          onClick={() => handleNavigate(currentScreen > 1 ? currentScreen - 1 : 18)}
+          className="text-slate-400 hover:text-cyan-400 active:scale-95 transition-all p-0.5"
+          title="Previous Screen"
+        >
+          <ChevronLeft size={14} />
+        </button>
+
+        <button
+          onClick={() => setShowScreenDrawer(!showScreenDrawer)}
+          className="flex items-center gap-1.5 text-cyan-400 font-bold px-1.5 hover:text-cyan-300 transition-colors"
+        >
+          <Layers size={13} />
+          <span>Screen {currentScreen}/19</span>
+        </button>
+
+        <button
+          onClick={() => handleNavigate(currentScreen < 18 ? currentScreen + 1 : 1)}
+          className="text-slate-400 hover:text-cyan-400 active:scale-95 transition-all p-0.5"
+          title="Next Screen"
+        >
+          <ChevronRight size={14} />
+        </button>
+
+        <div className="w-[1px] h-3 bg-slate-700 mx-0.5" />
+
+        <button
+          onClick={toggleTheme}
+          className="text-slate-400 hover:text-amber-400 active:scale-95 transition-colors p-0.5"
+          title="Toggle Light/Dark Theme"
+        >
+          {isLightMode ? <Moon size={13} /> : <Sun size={13} />}
+        </button>
       </div>
 
-      {/* Realistic Mobile Device Container Frame */}
-      <div className="relative w-full max-w-[400px] rounded-[44px] p-3 shadow-2xl bg-[#0F172A] border-4 border-slate-800/80 shadow-cyan-500/10">
-        {/* Dynamic Island / Earpiece */}
-        <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-4.5 bg-black rounded-full z-40 flex items-center justify-center">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#182138] mr-2" />
-          <div className="w-2.5 h-2.5 rounded-full bg-[#0d1424]" />
-        </div>
-
-        {/* Screen Display Area */}
-        <div className="relative w-full rounded-[36px] overflow-hidden bg-black min-h-[680px] flex flex-col justify-between shadow-inner">
-          {/* iOS / Android Native Status Bar */}
-          <div className="w-full h-8 pt-2.5 px-6 flex items-center justify-between text-[11px] font-semibold tracking-wider text-slate-300 z-30 select-none">
-            <span>9:41</span>
-            <div className="flex items-center gap-1.5">
-              <Signal size={12} />
-              <Wifi size={12} />
-              <div className="flex items-center gap-0.5">
-                <span className="text-[9px] font-mono">100%</span>
-                <Battery size={14} className="text-emerald-400" />
+      {/* Screen Selection Modal Sheet */}
+      {showScreenDrawer && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0F172A] border border-slate-700/80 rounded-3xl p-5 shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Layers size={18} className="text-cyan-400" />
+                <h3 className="font-bold text-white text-sm">Select Screen (19 Screens)</h3>
               </div>
+              <button
+                onClick={() => setShowScreenDrawer(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mt-4 overflow-y-auto pr-1 py-1 scrollbar-thin">
+              {screenNames.map((s) => {
+                const isSelected =
+                  s.num === 19 ? isLightMode && currentScreen === 7 : currentScreen === s.num && !isLightMode;
+                return (
+                  <button
+                    key={s.num}
+                    onClick={() => handleNavigate(s.num)}
+                    className={`text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                      isSelected
+                        ? "bg-cyan-500/20 border-cyan-500 text-cyan-300 font-bold shadow-md shadow-cyan-500/10"
+                        : "bg-slate-800/40 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    {s.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          {/* Screen Body */}
-          <div className="flex-1 w-full overflow-hidden flex flex-col">
-            {currentScreen === 1 && <Screen1Splash onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 2 && <Screen2Onboarding onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 3 && <Screen3Login onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 4 && <Screen4ConnectPhone onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 5 && <Screen5Permissions onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 6 && <Screen6PhoneConnected onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 7 && <Screen7Dashboard onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 8 && <Screen8VoiceAssistant onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 9 && <Screen9Chat onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 10 && <Screen10WhatsAppReply onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 11 && <Screen11NotificationAccess onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 12 && <Screen12SelectedContacts onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 13 && <Screen13CallScreen onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 14 && <Screen14LaptopControl onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 15 && <Screen15MyDevices onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 16 && (
-              <Screen16Settings
-                onNavigate={handleNavigate}
-                isLightMode={isLightMode}
-                onToggleTheme={toggleTheme}
-              />
-            )}
-            {currentScreen === 17 && <Screen17TaskHistory onNavigate={handleNavigate} isLightMode={isLightMode} />}
-            {currentScreen === 18 && <Screen18About onNavigate={handleNavigate} isLightMode={isLightMode} />}
-          </div>
-
-          {/* Home Bar */}
-          <div className="w-full h-4 pb-2 flex items-center justify-center z-30 select-none">
-            <div className="w-32 h-1 rounded-full bg-slate-500/50" />
-          </div>
         </div>
-      </div>
-
-      {/* Footer Instructions */}
-      <div className="mt-8 text-center text-xs text-slate-500 max-w-md">
-        <p>
-          💡 <span className="font-semibold text-slate-400">Pro-tip:</span> You can click through any button inside the phone frame to navigate naturally, or use the top menu to preview all 19 screens.
-        </p>
-      </div>
-    </div>
+      )}
+    </main>
   );
 }
