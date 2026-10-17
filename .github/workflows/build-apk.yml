@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,55 +22,62 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Configure Android SDK and Accept Licenses
-        run: |
-          echo "sdk.dir=$ANDROID_HOME" > ./android-app/local.properties
-          cat ./android-app/local.properties
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Install required SDK packages
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+      - name: Write local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > ./android-app/local.properties
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x ./android-app/gradlew
 
       - name: Build Debug APK
+        id: build_apk
         working-directory: ./android-app
-        run: |
-          set -o pipefail
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../build.log
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --info
 
-      - name: Show Build Log
+      - name: Find and list APKs
         if: always()
-        run: |
-          echo "==================== FULL GRADLE LOG ===================="
-          cat build.log || true
+        run: find ./android-app -name "*.apk" -type f
 
       - name: Prepare APK Output
+        if: steps.build_apk.outcome == 'success'
         run: |
           mkdir -p output-apk
-          find . -name "*.apk" -exec cp {} output-apk/ROBO-Agent.apk \;
+          APK_PATH=$(find ./android-app -name "*.apk" -type f | head -1)
+          echo "Found APK: $APK_PATH"
+          cp "$APK_PATH" output-apk/ROBO-Agent.apk
           ls -la output-apk/
 
       - name: Upload APK Artifact
+        if: steps.build_apk.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ROBO-Agent-APK
           path: output-apk/ROBO-Agent.apk
           retention-days: 30
 
-      - name: Publish Direct Download Release
+      - name: Create or Update Release
+        if: steps.build_apk.outcome == 'success' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.0-apk
           name: "ROBO Mobile Agent v1.0.0 (Direct APK)"
           body: |
             ### 🤖 ROBO Android Agent - Direct APK Download
+
             Download `ROBO-Agent.apk` directly on your mobile device to test ROBO.
-            
+
             **Features:**
             - 19-Screen UI/UX aligned with master specifications
             - Continuous background service
             - Multilingual voice support (Gujarati, Hindi, English)
-            - Zero-token WhatsApp and Calling support
+            - WhatsApp and Calling support
             - Master ON/OFF sync with Laptop and Web Dashboard
           files: output-apk/ROBO-Agent.apk
