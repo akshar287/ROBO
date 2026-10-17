@@ -63,6 +63,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             domStorageEnabled = true
             allowFileAccess = true
             allowContentAccess = true
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
             databaseEnabled = true
             useWideViewPort = true
             loadWithOverviewMode = true

@@ -7,6 +7,10 @@ android {
     namespace = "com.robo.ai"
     compileSdk = 34
 
+    androidResources {
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!_*:!~*"
+    }
+
     defaultConfig {
         applicationId = "com.robo.ai"
         minSdk = 26
