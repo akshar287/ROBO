@@ -11,6 +11,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.webkit.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -44,7 +45,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Setup Speech Recognizer
         setupSpeechRecognizer()
 
-        // Configure WebView with WebViewAssetLoader
+        // Configure WebView
         configureWebView()
 
         // Auto start background service
@@ -53,8 +54,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configureWebView() {
-        // Initialize modern WebViewAssetLoader to safely serve HTML, CSS & JS with https scheme
+        // Initialize modern WebViewAssetLoader mapped to root www directory
         assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this, "www"))
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
 
@@ -79,18 +81,41 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 view: WebView,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                return assetLoader.shouldInterceptRequest(request.url)
+                val path = request.url.path ?: ""
+                val cleanPath = path.trimStart('/')
+                val assetPath = if (cleanPath.isEmpty()) "www/index.html" else "www/$cleanPath"
+
+                try {
+                    val stream = assets.open(assetPath)
+                    val mime = when {
+                        cleanPath.endsWith(".html") || cleanPath.isEmpty() -> "text/html"
+                        cleanPath.endsWith(".css") -> "text/css"
+                        cleanPath.endsWith(".js") -> "application/javascript"
+                        cleanPath.endsWith(".json") -> "application/json"
+                        cleanPath.endsWith(".svg") -> "image/svg+xml"
+                        cleanPath.endsWith(".png") -> "image/png"
+                        else -> "application/octet-stream"
+                    }
+                    val headers = mapOf(
+                        "Access-Control-Allow-Origin" to "*",
+                        "Cache-Control" to "no-cache"
+                    )
+                    return WebResourceResponse(mime, "UTF-8", 200, "OK", headers, stream)
+                } catch (e: Exception) {
+                    return assetLoader.shouldInterceptRequest(request.url)
+                }
             }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-                return super.onConsoleMessage(consoleMessage)
+                Log.d("ROBO_WEBVIEW", "${consoleMessage?.message()} [line ${consoleMessage?.lineNumber()}]")
+                return true
             }
         }
 
-        // Load full 19-screen master application via HTTPS asset domain
-        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
+        // Load root index.html
+        webView.loadUrl("https://appassets.androidplatform.net/index.html")
     }
 
     inner class AndroidBridge {
