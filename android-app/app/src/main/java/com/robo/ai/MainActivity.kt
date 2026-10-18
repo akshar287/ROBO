@@ -194,6 +194,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         @JavascriptInterface
+        fun callOrDial(target: String, messageToSpeak: String) {
+            runOnUiThread {
+                if (messageToSpeak.isNotBlank()) {
+                    enableSpeakerphone(true)
+                }
+                ActionExecutor.callOrDialContact(this@MainActivity, target)
+                if (messageToSpeak.isNotBlank()) {
+                    scope.launch {
+                        delay(2500)
+                        speak(messageToSpeak, "in_call_speech")
+                    }
+                }
+            }
+        }
+
+        @JavascriptInterface
         fun sendWhatsApp(phoneNumber: String, message: String) {
             runOnUiThread {
                 ActionExecutor.sendWhatsAppMessage(this@MainActivity, phoneNumber, message)

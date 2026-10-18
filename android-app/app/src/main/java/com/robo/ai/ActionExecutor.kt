@@ -17,6 +17,36 @@ object ActionExecutor {
     fun openApp(context: Context, appName: String): Boolean {
         try {
             val key = appName.lowercase().trim()
+
+            // 1. Direct universal system actions (avoid package-name guessing / Play Store)
+            when (key) {
+                "dialer", "dialpad", "phone", "call", "keypad" -> {
+                    return dialPhone(context, "")
+                }
+                "alarm", "clock", "timer" -> {
+                    try {
+                        val alarmIntent = Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(alarmIntent)
+                        return true
+                    } catch (e: Exception) {
+                        // fallback to package resolution below
+                    }
+                }
+                "camera" -> {
+                    try {
+                        val camIntent = Intent("android.media.action.STILL_IMAGE_CAMERA").apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(camIntent)
+                        return true
+                    } catch (e: Exception) {
+                        // fallback
+                    }
+                }
+            }
+
             val pkg = when (key) {
                 "youtube" -> "com.google.android.youtube"
                 "whatsapp" -> "com.whatsapp"
@@ -31,7 +61,6 @@ object ActionExecutor {
                 "calendar" -> "com.google.android.calendar"
                 "calculator" -> "com.google.android.calculator"
                 "contacts" -> "com.google.android.contacts"
-                "phone", "dialer" -> "com.google.android.dialer"
                 "messages", "sms" -> "com.google.android.apps.messaging"
                 "drive" -> "com.google.android.apps.docs"
                 "instagram" -> "com.instagram.android"
@@ -66,7 +95,7 @@ object ActionExecutor {
                 return true
             }
 
-            // If exact package fails, try a fuzzy search in installed apps
+            // If exact package fails, search all installed apps on device
             val pm = context.packageManager
             val installed = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
             val match = installed.firstOrNull { info ->
@@ -111,6 +140,7 @@ object ActionExecutor {
 
     /**
      * Dials phone number using Android native dialer (user taps Call to confirm).
+     * If phoneNumber is empty, opens blank dialpad.
      */
     fun dialPhone(context: Context, phoneNumber: String): Boolean {
         return try {
@@ -127,12 +157,11 @@ object ActionExecutor {
 
     /**
      * Places a DIRECT phone call immediately (requires CALL_PHONE runtime permission).
-     * No dialer shown — rings instantly like Google Assistant.
+     * Rings directly on cellular network without requiring manual button tap.
      */
     fun callPhoneDirect(context: Context, phoneNumber: String): Boolean {
         return try {
             val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
-            // Ensure country code
             val formattedPhone = when {
                 cleanPhone.length == 10 -> "+91$cleanPhone"
                 cleanPhone.startsWith("0") -> "+91" + cleanPhone.substring(1)
@@ -148,6 +177,93 @@ object ActionExecutor {
         } catch (e: Exception) {
             Log.e(TAG, "Error calling phone: ${e.message}")
             dialPhone(context, phoneNumber)
+        }
+    }
+
+    /**
+     * Looks up contact in device phonebook by name or dials number directly.
+     * Always opens the dialpad if not found so user can dial manually.
+     */
+    fun callOrDialContact(context: Context, target: String): String {
+        return try {
+            val trimmed = target.trim()
+            val digitsOnly = trimmed.filter { it.isDigit() || it == '+' }
+
+            // 1. If input is already a phone number (e.g. 9876543210)
+            if (digitsOnly.length >= 7) {
+                callPhoneDirect(context, digitsOnly)
+                return digitsOnly
+            }
+
+            // 2. If target is empty or asking for dialpad/dialer
+            if (trimmed.isEmpty() || trimmed.lowercase() in listOf("dialer", "dialpad", "phone", "keypad")) {
+                dialPhone(context, "")
+                return ""
+            }
+
+            // 3. Search by contact name in Android device contacts
+            var foundNumber: String? = null
+            var matchedName: String? = null
+            val cursor = context.contentResolver.query(
+                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+                ),
+                "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                arrayOf("%$trimmed%"),
+                null
+            )
+            cursor?.use { c ->
+                val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (c.moveToFirst()) {
+                    matchedName = c.getString(nameIdx)
+                    foundNumber = c.getString(numIdx)
+                }
+            }
+
+            // 4. If not found and input contains spaces, search using the primary contact word
+            if (foundNumber.isNullOrBlank() && trimmed.contains(" ")) {
+                val words = trimmed.split(" ")
+                val cleanWord = words.firstOrNull { 
+                    it.length >= 3 && it.lowercase() !in listOf("call", "dial", "talk", "with", "phone", "and", "the", "her", "him", "tell") 
+                }
+                if (!cleanWord.isNullOrBlank()) {
+                    val subCursor = context.contentResolver.query(
+                        android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                        arrayOf(
+                            android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                            android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+                        ),
+                        "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                        arrayOf("%$cleanWord%"),
+                        null
+                    )
+                    subCursor?.use { c ->
+                        val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                        val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                        if (c.moveToFirst()) {
+                            matchedName = c.getString(nameIdx)
+                            foundNumber = c.getString(numIdx)
+                        }
+                    }
+                }
+            }
+
+            if (!foundNumber.isNullOrBlank()) {
+                Log.d(TAG, "Found contact $matchedName ($foundNumber), dialing directly")
+                callPhoneDirect(context, foundNumber!!)
+                foundNumber!!
+            } else {
+                Log.d(TAG, "Contact '$trimmed' not found in device contacts, opening dialpad")
+                dialPhone(context, "")
+                ""
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in callOrDialContact: ${e.message}")
+            dialPhone(context, "")
+            ""
         }
     }
 
