@@ -47,7 +47,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .dot-g{background:#22C55E;box-shadow:0 0 6px #22C55E;}
-.dot-r{background:#EF4444;}
+.dot-r{background:#EF4444;box-shadow:0 0 6px #EF4444;}
 .dot-a{background:#F59E0B;}
 
 /* MODAL */
@@ -80,15 +80,18 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 /* VOICE RING */
 @keyframes vring{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.5),0 0 24px rgba(34,211,238,.3)}50%{box-shadow:0 0 0 14px rgba(34,211,238,0),0 0 36px rgba(34,211,238,.6)}}
 .vring{animation:vring 1.8s ease-in-out infinite;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-.fu{animation:fadeUp .35s ease forwards;}
+
+/* WAVE PULSE FOR AI CALL */
+@keyframes wavePulse{0%,100%{transform:scaleY(0.4)}50%{transform:scaleY(1.3)}}
+.wave-bar{width:4px;height:24px;background:#22D3EE;border-radius:2px;display:inline-block;animation:wavePulse 0.8s ease-in-out infinite;}
+.wave-bar:nth-child(2){animation-delay:0.15s;}
+.wave-bar:nth-child(3){animation-delay:0.3s;}
+.wave-bar:nth-child(4){animation-delay:0.45s;}
+.wave-bar:nth-child(5){animation-delay:0.6s;}
 
 /* CHAT BUBBLES */
 .cb-user{background:linear-gradient(135deg,#2563EB,#06B6D4);border-radius:16px 16px 4px 16px;padding:11px 13px;max-width:80%;font-size:13px;line-height:1.55;color:#fff;}
 .cb-bot{background:#10192E;border:1px solid #1D2B4A;border-radius:16px 16px 16px 4px;padding:11px 13px;max-width:82%;font-size:13px;line-height:1.55;color:#CBD5E1;}
-
-/* SPLASH ANIM */
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -98,7 +101,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 <div id="s1" class="screen active" style="background:linear-gradient(160deg,#060a14 0%,#091124 55%,#0d1b3a 100%);justify-content:space-between;padding:24px 24px 32px;">
   <div style="display:flex;justify-content:space-between;align-items:center;">
     <span id="ota-label" style="font-size:10px;color:#334155;"></span>
-    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18);">v2.1</span>
+    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18);">v2.2</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
     <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
@@ -116,9 +119,9 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <h1 style="font-size:44px;font-weight:900;letter-spacing:4px;" class="grad-text">ROBO</h1>
     <p style="color:rgba(103,232,249,.75);font-size:13px;letter-spacing:.8px;">Your Personal AI Agent</p>
     <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
-      <span style="color:#334155;font-size:11px;">Call</span><span style="color:#22D3EE;font-size:7px;">●</span>
+      <span style="color:#334155;font-size:11px;">Call &amp; Talk</span><span style="color:#22D3EE;font-size:7px;">●</span>
       <span style="color:#334155;font-size:11px;">WhatsApp</span><span style="color:#22D3EE;font-size:7px;">●</span>
-      <span style="color:#334155;font-size:11px;">Launch Apps</span>
+      <span style="color:#334155;font-size:11px;">Real Apps</span>
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;">
@@ -137,12 +140,11 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;"><span style="font-size:22px;">🤖</span><span style="font-size:18px;font-weight:800;" class="grad-text">What ROBO can do</span></div>
     <div class="scroll-body" style="max-height:68vh;">
       <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:10px;">
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📞</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Direct Calling</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy" — ROBO calls instantly, no dialer popup.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">💬</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">WhatsApp Messages</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "WhatsApp Rahul — meeting at 5" and it opens WhatsApp with text ready.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🚀</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">App Launcher</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Open YouTube" — launches any installed app, no Play Store.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📧</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Email Assistant</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Connect Gmail — draft and reply to emails with AI.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🎤</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Gujarati · Hindi · English</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Speak naturally in any of the three languages.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🔄</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Self-Updating App</p><p style="font-size:12px;color:#64748B;line-height:1.5;">ROBO auto-updates itself silently — you never reinstall again.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🗣️</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Call &amp; Talk on Your Behalf</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy and talk with Mummy" — ROBO speaks on your behalf and logs conversation history.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📞</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Direct Phone Calls</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy" — instantly dials selected contact directly, no dialer keypad.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">💬</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">WhatsApp on Your Behalf</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "WhatsApp Rahul and tell him I'm reaching at 5" — drafts &amp; sends for you.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🚀</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Opens Real Installed Apps</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Open Alarm" or "Open YouTube" — launches apps installed on your phone directly.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🔒</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Agent ON / OFF Master Switch</p><p style="font-size:12px;color:#64748B;line-height:1.5;">When Agent is OFF, all automated tasks are paused. Turn ON to enable actions.</p></div></div>
       </div>
     </div>
   </div>
@@ -165,7 +167,6 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="le" class="inp" type="email" placeholder="Email address" style="padding-left:40px;"/></div>
       <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">🔒</span><input id="lp" class="inp" type="password" placeholder="Password" style="padding-left:40px;"/></div>
       <button onclick="doLogin()" class="btn-p" style="margin-top:4px;">Sign In →</button>
-      <button onclick="showT('Password reset link sent to your email.')" style="color:#22D3EE;font-size:12px;">Forgot password?</button>
     </div>
     <div id="fr" style="display:none;flex-direction:column;gap:10px;">
       <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">👤</span><input id="rn" class="inp" type="text" placeholder="Full Name" style="padding-left:40px;"/></div>
@@ -197,7 +198,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <div class="card" style="margin-bottom:12px;">
       <p style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Gmail / Email</p>
       <div style="position:relative;"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="emIn" class="inp" type="email" placeholder="your@gmail.com" style="padding-left:38px;"/></div>
-      <p style="font-size:11px;color:#1E293B;margin-top:7px;">ROBO drafts replies — you approve before sending.</p>
+      <p style="font-size:11px;color:#1E293B;margin-top:7px;">ROBO drafts replies on your behalf.</p>
     </div>
     <!-- Contacts load -->
     <div class="card" style="margin-bottom:12px;">
@@ -205,7 +206,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">Phone Contacts</p>
         <span id="cbadge" class="badge b-red">Not loaded</span>
       </div>
-      <p style="font-size:12px;color:#475569;margin-bottom:10px;line-height:1.5;">Load your real contacts so ROBO can call and WhatsApp them by name.</p>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;line-height:1.5;">Load your real contacts so ROBO can call, talk, and WhatsApp them by name.</p>
       <button onclick="loadContacts()" style="width:100%;padding:11px;border-radius:12px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.25);color:#22D3EE;font-size:13px;font-weight:700;">📋 Load My Contacts</button>
     </div>
     <!-- Call contacts -->
@@ -214,7 +215,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">📞 Call Contacts</p>
         <span id="callBadge" class="badge b-blue">0 selected</span>
       </div>
-      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO will call these people directly when you say their name.</p>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO calls these contacts directly or talks with them on your behalf.</p>
       <button onclick="openPicker('call')" style="width:100%;padding:11px;border-radius:12px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:13px;">Select Contacts for Calling →</button>
       <div id="callChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
     </div>
@@ -224,7 +225,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">💬 WhatsApp Contacts</p>
         <span id="waBadge" class="badge b-blue">0 selected</span>
       </div>
-      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO will open WhatsApp for these people with a pre-filled message.</p>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO messages these contacts or chats on your behalf.</p>
       <button onclick="openPicker('wa')" style="width:100%;padding:11px;border-radius:12px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.25);color:#25D366;font-size:13px;margin-bottom:8px;">Select WhatsApp Contacts →</button>
       <div id="waChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
     </div>
@@ -244,15 +245,22 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <span style="font-size:18px;font-weight:900;letter-spacing:2px;" class="grad-text">ROBO</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button id="atoggle" onclick="toggleAgent()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#22D3EE;font-size:11px;font-weight:700;">
+        <!-- AGENT TOGGLE BUTTON -->
+        <button id="atoggle" onclick="toggleAgent()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;">
           <span id="adot" class="dot dot-g"></span><span id="albl">Agent ON</span>
         </button>
         <button onclick="G(16)" style="width:32px;height:32px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;font-size:15px;display:flex;align-items:center;justify-content:center;">⚙️</button>
       </div>
     </div>
     <h2 id="greet" style="font-size:19px;font-weight:800;color:#F1F5F9;">Good Morning, Akshar 👋</h2>
-    <p style="font-size:12px;color:#334155;">How can I help you today?</p>
+    <p id="subGreeting" style="font-size:12px;color:#334155;">How can I help you today?</p>
   </div>
+
+  <!-- Agent Paused Alert Banner (Shown when Agent OFF) -->
+  <div id="agentPausedBanner" style="display:none;background:rgba(239,68,68,.12);border-bottom:1px solid rgba(239,68,68,.3);padding:8px 16px;text-align:center;">
+    <p style="font-size:11px;color:#F87171;font-weight:600;">⏸️ ROBO Agent is PAUSED — Tap "Agent OFF" at top right to enable tasks.</p>
+  </div>
+
   <!-- Scroll area -->
   <div class="scroll-body" style="padding:12px 16px 80px;">
     <!-- Status row -->
@@ -261,6 +269,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">📧</span><div><p style="font-size:10px;color:#334155;">Email</p><p id="emStat" style="font-size:12px;font-weight:700;color:#F59E0B;">Not set</p></div></div>
       <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">💬</span><div><p style="font-size:10px;color:#334155;">WhatsApp</p><p style="font-size:12px;font-weight:700;color:#25D366;">Ready</p></div></div>
     </div>
+
     <!-- Mic + text input -->
     <div class="card" style="padding:18px;text-align:center;margin-bottom:14px;background:linear-gradient(160deg,#10192E,#0B1327);">
       <button id="micBtn" onclick="startVoice()" style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 14px;box-shadow:0 0 28px rgba(6,182,212,.45);" class="vring">🎤</button>
@@ -270,6 +279,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       </div>
       <p id="dashReply" style="margin-top:9px;font-size:12px;color:#22D3EE;min-height:16px;"></p>
     </div>
+
     <!-- Quick actions -->
     <div style="margin-bottom:14px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
@@ -277,12 +287,13 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <button onclick="G(4)" style="font-size:11px;color:#22D3EE;">Manage →</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-        <button onclick="quickCall()" class="qa"><span style="font-size:20px;">📞</span><div><p style="font-size:12px;font-weight:700;">Call</p><p id="qcName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
+        <button onclick="quickCall()" class="qa"><span style="font-size:20px;">📞</span><div><p style="font-size:12px;font-weight:700;">Direct Call</p><p id="qcName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
+        <button onclick="quickTalkBehalf()" class="qa"><span style="font-size:20px;">🗣️</span><div><p style="font-size:12px;font-weight:700;">Call &amp; Talk</p><p id="qcTalkName" style="font-size:10px;color:#22D3EE;">Talk behalf of me</p></div></button>
         <button onclick="quickWA()" class="qa"><span style="font-size:20px;color:#25D366;">💬</span><div><p style="font-size:12px;font-weight:700;">WhatsApp</p><p id="qwName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
-        <button onclick="G(22)" class="qa"><span style="font-size:20px;">📧</span><div><p style="font-size:12px;font-weight:700;">Email</p><p style="font-size:10px;color:#475569;">Draft reply</p></div></button>
         <button onclick="G(21)" class="qa"><span style="font-size:20px;">🚀</span><div><p style="font-size:12px;font-weight:700;">Launch App</p><p style="font-size:10px;color:#475569;">Any installed app</p></div></button>
       </div>
     </div>
+
     <!-- App quick-launch -->
     <div style="margin-bottom:14px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
@@ -300,6 +311,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <button class="app-btn" onclick="launch('settings')"><div class="app-ic" style="background:rgba(100,116,139,.1);">⚙️</div><span class="app-lbl">Settings</span></button>
       </div>
     </div>
+
     <!-- History -->
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
@@ -311,7 +323,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
   </div>
 </div>
 
-<!-- ████ S8 VOICE ████ -->
+<!-- ████ S8 VOICE ASSISTANT ████ -->
 <div id="s8" class="screen" style="background:#060A14;">
   <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #0D1B3A;flex-shrink:0;">
     <button onclick="GB()" style="color:#475569;font-size:20px;">←</button>
@@ -320,26 +332,26 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
   </div>
   <div class="scroll-body" style="padding:20px 16px 90px;display:flex;flex-direction:column;align-items:center;">
     <button id="vBtn" onclick="trigVoice()" style="width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:52px;margin:16px auto;box-shadow:0 0 36px rgba(6,182,212,.5);" class="vring">🎤</button>
-    <p id="vState" style="font-size:14px;font-weight:600;color:#22D3EE;margin-bottom:10px;">Tap to speak</p>
-    <div id="vTrans" style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:14px;width:100%;min-height:56px;font-size:13px;color:#64748B;text-align:center;margin-bottom:14px;line-height:1.6;">Waiting for command...</div>
+    <p id="vState" style="font-size:14px;font-weight:600;color:#22D3EE;margin-bottom:10px;">Tap mic to speak</p>
+    <div id="vTrans" style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:14px;width:100%;min-height:56px;font-size:13px;color:#64748B;text-align:center;margin-bottom:14px;line-height:1.6;">Waiting for voice command...</div>
     <div id="vAction" style="background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);border-radius:12px;padding:12px 14px;width:100%;font-size:13px;color:#22D3EE;text-align:center;margin-bottom:16px;display:none;"></div>
+
     <!-- Example commands -->
     <div style="width:100%;margin-bottom:14px;">
-      <p style="font-size:11px;color:#334155;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Try saying</p>
+      <p style="font-size:11px;color:#334155;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Tap to test command</p>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        <span onclick="testCmd('Call Mummy')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Call Mummy</span>
-        <span onclick="testCmd('WhatsApp Rahul — meeting at 5')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">WhatsApp Rahul</span>
-        <span onclick="testCmd('Open YouTube')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Open YouTube</span>
-        <span onclick="testCmd('Open Alarm')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Open Alarm</span>
-        <span onclick="testCmd('Open Gmail')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Open Gmail</span>
-        <span onclick="testCmd('Send WhatsApp to Papa — I am coming home')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Send WA to Papa</span>
+        <span onclick="testCmd('Call Mummy and talk with Mummy')" style="background:#10192E;border:1px solid rgba(34,211,238,.4);border-radius:8px;padding:5px 10px;font-size:11px;color:#22D3EE;cursor:pointer;">🗣️ Call &amp; Talk with Mummy</span>
+        <span onclick="testCmd('Call Mummy')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">📞 Call Mummy</span>
+        <span onclick="testCmd('WhatsApp Rahul and tell him meeting at 5')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">💬 WhatsApp Rahul</span>
+        <span onclick="testCmd('Open YouTube')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">▶️ Open YouTube</span>
+        <span onclick="testCmd('Open Alarm')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">⏰ Open Alarm</span>
       </div>
     </div>
     <!-- Language -->
     <div style="display:flex;gap:8px;width:100%;margin-bottom:14px;">
-      <button id="lg-gu" onclick="setLang('gu')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,211,238,.15);border:1px solid rgba(34,211,238,.4);color:#22D3EE;font-size:13px;font-weight:700;">ગુ</button>
-      <button id="lg-hi" onclick="setLang('hi')" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;">हि</button>
-      <button id="lg-en" onclick="setLang('en')" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;">EN</button>
+      <button id="lg-gu" onclick="setLang('gu')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,211,238,.15);border:1px solid rgba(34,211,238,.4);color:#22D3EE;font-size:13px;font-weight:700;">ગુજરાતી</button>
+      <button id="lg-hi" onclick="setLang('hi')" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;">हिन्दी</button>
+      <button id="lg-en" onclick="setLang('en')" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;">English</button>
     </div>
     <!-- Text fallback -->
     <div style="display:flex;gap:8px;width:100%;">
@@ -359,7 +371,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
   <div id="chatMsgs" class="scroll-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:10px;padding-bottom:80px;">
     <div style="display:flex;gap:10px;align-items:flex-end;">
       <div style="width:30px;height:30px;border-radius:9px;background:rgba(34,211,238,.12);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</div>
-      <div class="cb-bot">Hello! I'm ROBO. Say or type a command — I'll call, WhatsApp, launch apps, and more. What do you need?</div>
+      <div class="cb-bot">Hello! I'm ROBO. Say or type a command — I'll call, talk on your behalf, send WhatsApp, or open apps. What do you need?</div>
     </div>
   </div>
   <div style="padding:10px 16px 16px;border-top:1px solid #0D1B3A;flex-shrink:0;background:#060A14;">
@@ -403,8 +415,8 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Permissions</p>
     <div class="card" style="margin-bottom:14px;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Microphone</span><span class="badge b-green">Granted</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Contacts</span><span id="permC" class="badge b-amber">Pending</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Phone / Call</span><span id="permP" class="badge b-amber">Pending</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Contacts</span><span id="permC" class="badge b-green">Active</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Direct Calling</span><span id="permP" class="badge b-green">Active</span></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;"><span style="font-size:13px;color:#CBD5E1;">Notifications</span><span class="badge b-green">Granted</span></div>
     </div>
     <button onclick="doLogout()" style="width:100%;padding:13px;border-radius:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#F87171;font-size:14px;font-weight:700;">Sign Out</button>
@@ -418,7 +430,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <div style="position:relative;margin-bottom:14px;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">🔍</span><input id="appSearch" class="inp" type="text" placeholder="Search app..." style="padding-left:38px;" oninput="filterApps(this.value)"/></div>
     <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;">
       <button onclick="startVoice()" style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#0EA5E9,#06B6D4);font-size:23px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">🎤</button>
-      <div><p style="font-size:13px;font-weight:700;color:#CBD5E1;">Say "Open [App Name]"</p><p style="font-size:11px;color:#334155;">Opens installed app instantly — no Play Store</p></div>
+      <div><p style="font-size:13px;font-weight:700;color:#CBD5E1;">Say "Open [App Name]"</p><p style="font-size:11px;color:#334155;">Opens installed app directly</p></div>
     </div>
     <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;">Installed Apps</p>
     <div id="appGridFull" class="app-grid">
@@ -439,7 +451,6 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       <button class="app-btn" onclick="launch('instagram')" data-name="instagram"><div class="app-ic" style="background:rgba(236,72,153,.1);">📸</div><span class="app-lbl">Instagram</span></button>
       <button class="app-btn" onclick="launch('telegram')" data-name="telegram"><div class="app-ic" style="background:rgba(59,130,246,.1);">✈️</div><span class="app-lbl">Telegram</span></button>
     </div>
-    <!-- Custom app by name -->
     <div style="margin-top:18px;" class="card">
       <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:10px;">Open any app by name</p>
       <div style="display:flex;gap:8px;">
@@ -457,7 +468,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <div class="card" style="margin-bottom:14px;text-align:center;padding:22px;">
       <div style="font-size:42px;margin-bottom:8px;">📧</div>
       <p style="font-size:15px;font-weight:700;margin-bottom:5px;">Connect Your Email</p>
-      <p style="font-size:12px;color:#334155;line-height:1.5;margin-bottom:14px;">ROBO reads incoming emails and suggests AI replies. You approve before sending.</p>
+      <p style="font-size:12px;color:#334155;line-height:1.5;margin-bottom:14px;">ROBO reads incoming emails and suggests AI replies on your behalf.</p>
       <div id="emConState" style="display:none;margin-bottom:12px;">
         <div style="display:flex;align-items:center;justify-content:center;gap:7px;"><span class="dot dot-g"></span><p style="font-size:14px;font-weight:700;color:#22C55E;">Connected</p></div>
         <p id="emConAddr" style="font-size:12px;color:#334155;margin-top:2px;"></p>
@@ -467,14 +478,6 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <button onclick="saveEmail()" class="btn-p">Connect Email →</button>
       </div>
     </div>
-    <div class="card">
-      <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:10px;">Privacy Guarantee</p>
-      <div style="display:flex;flex-direction:column;gap:7px;">
-        <div style="display:flex;gap:9px;align-items:flex-start;"><span style="color:#22C55E;">✓</span><p style="font-size:12px;color:#475569;line-height:1.5;">ROBO never sends emails automatically</p></div>
-        <div style="display:flex;gap:9px;align-items:flex-start;"><span style="color:#22C55E;">✓</span><p style="font-size:12px;color:#475569;line-height:1.5;">Every reply requires your explicit approval</p></div>
-        <div style="display:flex;gap:9px;align-items:flex-start;"><span style="color:#22C55E;">✓</span><p style="font-size:12px;color:#475569;line-height:1.5;">Email content is not stored on external servers</p></div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -482,6 +485,31 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 <div id="s23" class="screen" style="background:#070D1B;">
   <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Task History</span><button onclick="clearHist()" style="font-size:11px;color:#475569;">Clear all</button></div>
   <div id="histList" class="scroll-body" style="padding:16px;padding-bottom:80px;display:flex;flex-direction:column;gap:4px;"></div>
+</div>
+
+<!-- ████ AI CALL & TALK MODAL (SPEAKS ON BEHALF OF USER) ████ -->
+<div id="callTalkModal" class="modal">
+  <div class="modal-box" style="text-align:center;padding:24px 20px 32px;">
+    <div class="mhandle"></div>
+    <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px;box-shadow:0 0 24px rgba(6,182,212,.5);" class="vring">🤖</div>
+    <h3 id="ctContactName" style="font-size:18px;font-weight:800;color:#F1F5F9;margin-bottom:4px;">Mummy</h3>
+    <p id="ctContactPhone" style="font-size:12px;color:#64748B;margin-bottom:14px;">+91 98765 00001</p>
+    
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
+      <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+      <span style="font-size:12px;font-weight:700;color:#22D3EE;margin-left:8px;">ROBO Speaking on Behalf of Akshar...</span>
+    </div>
+
+    <div style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:14px;margin-bottom:18px;text-align:left;">
+      <p style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px;">Speech Transcript</p>
+      <p id="ctTranscript" style="font-size:13px;color:#CBD5E1;line-height:1.6;">"Namaste Mummy, I am ROBO AI Agent calling on behalf of Akshar..."</p>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button id="ctCallBtn" onclick="confirmCallTalk()" style="flex:1;padding:13px;border-radius:14px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;">Place Call Now 📞</button>
+      <button onclick="closeCallTalk()" style="padding:13px 18px;border-radius:14px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#F87171;font-size:13px;font-weight:700;">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <!-- ████ CONTACT PICKER MODAL ████ -->
@@ -513,6 +541,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 </nav>
 
 </div><!-- #app -->
+
 <script>
 // ═══════════ STATE ═══════════
 var S = {
@@ -577,9 +606,7 @@ var COLORS=['#22D3EE','#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444
 function loadContacts(){
   showT('Loading your contacts...');
   if(window.AndroidBridge){
-    // Try async first
     try{ AndroidBridge.loadContacts(); }catch(e){}
-    // Also try sync
     try{
       var raw = AndroidBridge.getContacts();
       if(raw && raw.length > 2) processContacts(JSON.parse(raw));
@@ -593,8 +620,7 @@ function useDemoContacts(){
     {name:'Mummy',phone:'+919876500001'},{name:'Papa',phone:'+919876500002'},
     {name:'Rahul',phone:'+919876500003'},{name:'Priya',phone:'+919876500004'},
     {name:'Boss',phone:'+919876500005'},{name:'Office',phone:'+919876500006'},
-    {name:'Doctor',phone:'+919876500007'},{name:'Ravi',phone:'+919876500008'},
-    {name:'Anita',phone:'+919876500009'},{name:'Suresh',phone:'+919876500010'}
+    {name:'Doctor',phone:'+919876500007'},{name:'Ravi',phone:'+919876500008'}
   ]);
 }
 function processContacts(list){
@@ -607,7 +633,6 @@ function processContacts(list){
   if(badge){badge.textContent=S.contacts.length+' loaded';badge.className='badge b-green';}
   showT('Loaded '+S.contacts.length+' contacts!');
 }
-// Called by Android when async contacts load completes
 window.onContactsLoaded = function(jsonStr){
   try{ processContacts(JSON.parse(jsonStr)); }catch(e){}
 };
@@ -646,6 +671,7 @@ function confirmPicker(){
     var b=document.getElementById('callBadge'); if(b){b.textContent=sel.length+' selected';b.className='badge b-green';}
     renderChips('callChips',sel);
     var q=document.getElementById('qcName'); if(q&&sel.length)q.textContent=sel[0].name;
+    var qt=document.getElementById('qcTalkName'); if(qt&&sel.length)qt.textContent='Talk: '+sel[0].name;
   } else {
     S.waCtx=sel;
     var b=document.getElementById('waBadge'); if(b){b.textContent=sel.length+' selected';b.className='badge b-green';}
@@ -681,30 +707,58 @@ function saveEmail(){
   showT('Email connected!');
 }
 
-// ═══════════ DASHBOARD REFRESH ═══════════
+// ═══════════ DASHBOARD REFRESH & AGENT TOGGLE ═══════════
 function refreshDash(){
   var h=new Date().getHours(), g=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';
   var gr=document.getElementById('greet'); if(gr)gr.textContent=g+', '+(S.name||'User')+' \uD83D\uDC4B';
   var es=document.getElementById('emStat');
   if(es&&S.email){es.textContent='Connected';es.style.color='#22C55E';}
   var qcn=document.getElementById('qcName'); if(qcn&&S.callCtx.length)qcn.textContent=S.callCtx[0].name;
+  var qctn=document.getElementById('qcTalkName'); if(qctn&&S.callCtx.length)qctn.textContent='Talk: '+S.callCtx[0].name;
   var qwn=document.getElementById('qwName'); if(qwn&&S.waCtx.length)qwn.textContent=S.waCtx[0].name;
   renderChips('callChips',S.callCtx); renderChips('waChips',S.waCtx);
   if(S.callCtx.length){var b=document.getElementById('callBadge');if(b){b.textContent=S.callCtx.length+' selected';b.className='badge b-green';}}
   if(S.waCtx.length){var b=document.getElementById('waBadge');if(b){b.textContent=S.waCtx.length+' selected';b.className='badge b-green';}}
   renderHistPreview();
+
+  // Sync Agent Toggle button UI
+  updateAgentUI();
 }
+
+function updateAgentUI(){
+  var lbl=document.getElementById('albl'),dot=document.getElementById('adot'),btn=document.getElementById('atoggle');
+  var banner=document.getElementById('agentPausedBanner');
+  var mic=document.getElementById('micBtn');
+  var subGreet=document.getElementById('subGreeting');
+
+  if(S.agentOn){
+    if(lbl) lbl.textContent='Agent ON';
+    if(dot) dot.className='dot dot-g';
+    if(btn) btn.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;';
+    if(banner) banner.style.display='none';
+    if(mic) mic.style.opacity='1';
+    if(subGreet) subGreet.textContent='How can I help you today?';
+  } else {
+    if(lbl) lbl.textContent='Agent OFF';
+    if(dot) dot.className='dot dot-r';
+    if(btn) btn.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);color:#F87171;font-size:11px;font-weight:700;';
+    if(banner) banner.style.display='block';
+    if(mic) mic.style.opacity='0.45';
+    if(subGreet) subGreet.textContent='Agent is Paused. Turn Agent ON to execute tasks.';
+  }
+}
+
 function toggleAgent(){
   S.agentOn=!S.agentOn;
-  var lbl=document.getElementById('albl'),dot=document.getElementById('adot'),btn=document.getElementById('atoggle');
+  save();
+  updateAgentUI();
   if(S.agentOn){
-    lbl.textContent='Agent ON';dot.className='dot dot-g';
-    btn.style.cssText='display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#22D3EE;font-size:11px;font-weight:700;';
+    showT('🟢 ROBO Agent Active! Ready for commands.');
+    if(window.AndroidBridge) AndroidBridge.showToast('ROBO Agent Active');
   } else {
-    lbl.textContent='Agent OFF';dot.className='dot dot-r';
-    btn.style.cssText='display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#F87171;font-size:11px;font-weight:700;';
+    showT('⏸️ ROBO Agent Paused. Tasks will be blocked until turned ON.');
+    if(window.AndroidBridge) AndroidBridge.showToast('ROBO Agent Paused');
   }
-  if(window.AndroidBridge)AndroidBridge.showToast('ROBO '+(S.agentOn?'Active':'Paused'));
 }
 
 // ═══════════ HISTORY ═══════════
@@ -717,7 +771,7 @@ function addHist(icon,text,status){
 }
 function renderHistPreview(){
   var c=document.getElementById('histPreview'); if(!c)return;
-  if(S.taskHistory.length===0){c.innerHTML='<p style="font-size:12px;color:#334155;text-align:center;padding:14px 0;">No tasks yet. Try a voice command!</p>';return;}
+  if(S.taskHistory.length===0){c.innerHTML='<p style="font-size:12px;color:#334155;text-align:center;padding:14px 0;">No tasks yet. Try saying: "Call Mummy and talk with Mummy"!</p>';return;}
   c.innerHTML=S.taskHistory.slice(0,4).map(function(h){
     return '<div class="hi"><span style="font-size:20px;">'+h.icon+'</span><div style="flex:1;"><p style="font-size:13px;font-weight:600;color:#CBD5E1;">'+h.text+'</p><p style="font-size:11px;color:#334155;">'+h.time+'</p></div><span class="badge b-green">'+h.status+'</span></div>';
   }).join('');
@@ -750,19 +804,15 @@ var APPS = {
   'paytm':'net.one97.paytm','gpay':'com.google.android.apps.nbu.paisa.user',
   'phonepe':'com.phonepe.app','swiggy':'in.swiggy.android','zomato':'com.application.zomato',
   'amazon':'com.amazon.mShop.android.shopping','flipkart':'com.flipkart.android',
-  'snapchat':'com.snapchat.android','linkedin':'com.linkedin.android',
-  'meet':'com.google.android.apps.meetings','teams':'com.microsoft.teams'
+  'snapchat':'com.snapchat.android','linkedin':'com.linkedin.android'
 };
 
-// Find a contact by matching any word in the spoken text
 function findContact(text, pool){
   var lower = text.toLowerCase();
   if(!pool||!pool.length) pool = S.contacts;
-  // Exact name match first
   for(var i=0;i<pool.length;i++){
     if(lower.indexOf(pool[i].name.toLowerCase())!==-1) return pool[i];
   }
-  // Word-by-word match
   var words = lower.split(/\s+/);
   for(var w=0;w<words.length;w++){
     if(words[w].length<3) continue;
@@ -773,15 +823,17 @@ function findContact(text, pool){
   return null;
 }
 
-// Extract message after "—" or "message is" or "saying" from WA command
 function extractMsg(text){
-  var separators = [' — ',' -- ',' message ',' saying ',' that '];
+  var separators = [' — ',' -- ',' message ',' saying ',' that ',' tell him ',' tell her ',' bol '];
   for(var i=0;i<separators.length;i++){
     var idx = text.toLowerCase().indexOf(separators[i]);
     if(idx!==-1) return text.substring(idx+separators[i].length).trim();
   }
   return '';
 }
+
+// Current active Call & Talk target
+var activeCallTalk = null;
 
 function processCmd(text, fromVoice){
   var lower = text.toLowerCase().trim();
@@ -791,19 +843,61 @@ function processCmd(text, fromVoice){
   var va = document.getElementById('vAction');
   if(vt) vt.textContent = '"'+text+'"';
 
-  // ─── CALL INTENT ───
-  var isCall = /\b(call|ring|phone|dial|bol|bolo|bolav)\b/.test(lower);
+  // ─── AGENT ON/OFF CHECK ───
+  if(!S.agentOn){
+    var pauseMsg = '⛔ ROBO Agent is paused. Switch Agent ON at top right.';
+    if(vt) vt.textContent = pauseMsg;
+    if(va){va.textContent=pauseMsg;va.style.display='block';}
+    setDashReply(pauseMsg);
+    showT(pauseMsg);
+    if(window.AndroidBridge) AndroidBridge.speak('ROBO Agent is paused. Please turn Agent ON to execute tasks.');
+    return;
+  }
+
+  // ─── 1. CALL & TALK ON BEHALF INTENT ───
+  // Matches "call mummy and talk", "call and talk with mummy", "call rahul on behalf of me", "mummy ne phone lagavi ne vaat kar", etc.
+  var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/.test(lower) && /\b(call|phone|ring|dial|lagav|lagao)\b/.test(lower))
+                     || /\b(talk with|baat karo|vaat kar)\b/.test(lower);
+
+  if(isTalkBehalf){
+    var pool = S.callCtx.length ? S.callCtx : S.contacts;
+    var ct = findContact(lower, pool);
+    if(!ct && pool.length > 0) ct = pool[0]; // default to first selected contact
+
+    if(ct){
+      var customNote = extractMsg(text);
+      var speechScript = customNote 
+        ? "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar: " + customNote
+        : "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar: Akshar asked me to connect with you. Please talk with Akshar!";
+
+      openCallTalkModal(ct, speechScript);
+      return;
+    } else {
+      var msg='No contact selected. Please select a call contact in Settings.';
+      if(vt)vt.textContent=msg;
+      setDashReply(msg);
+      showT(msg);
+      return;
+    }
+  }
+
+  // ─── 2. DIRECT CALL INTENT ───
+  var isCall = /\b(call|ring|phone|dial|phone kar)\b/.test(lower);
   if(isCall){
     var pool = S.callCtx.length ? S.callCtx : S.contacts;
     var ct = findContact(lower, pool);
     if(ct){
-      var msg = 'Calling '+ct.name+'...';
+      var msg = 'Calling '+ct.name+' directly...';
       if(vt) vt.textContent = msg;
       if(va){va.textContent='📞 '+msg;va.style.display='block';}
       setDashReply('📞 Calling '+ct.name+'...');
       addHist('📞','Called '+ct.name,'Done');
-      if(window.AndroidBridge) AndroidBridge.callPhone(ct.phone);
-      else showT('Calling '+ct.name+' ('+ct.phone+')');
+      if(window.AndroidBridge) {
+        AndroidBridge.speak('Calling ' + ct.name);
+        AndroidBridge.callPhone(ct.phone);
+      } else {
+        showT('Calling '+ct.name+' ('+ct.phone+')');
+      }
       return;
     } else {
       var msg='No matching contact found. Set call contacts first.';
@@ -814,21 +908,29 @@ function processCmd(text, fromVoice){
     }
   }
 
-  // ─── WHATSAPP INTENT ───
+  // ─── 3. WHATSAPP ON BEHALF / CHAT INTENT ───
   var isWA = /\b(whatsapp|wa|watsapp|message|msg|send|chat)\b/.test(lower);
   if(isWA){
     var pool = S.waCtx.length ? S.waCtx : S.contacts;
     var ct = findContact(lower, pool);
     if(ct){
       var customMsg = extractMsg(text);
-      var finalMsg = customMsg || ('Hello '+ct.name+'!');
+      var isBehalf = /\b(behalf|talk|say|tell|bol|baat)\b/.test(lower);
+      var finalMsg = isBehalf 
+        ? ("Hello " + ct.name + "! 🤖 This is ROBO AI Agent on behalf of Akshar: " + (customMsg || "Akshar asked me to connect with you. Please let Akshar know when you are free!"))
+        : (customMsg || ('Hello '+ct.name+'!'));
+
       var msg='Opening WhatsApp for '+ct.name+'...';
       if(vt)vt.textContent=msg;
       if(va){va.textContent='💬 '+msg;va.style.display='block';}
       setDashReply('💬 WhatsApp → '+ct.name);
       addHist('💬','WhatsApp: '+ct.name+(customMsg?' — "'+customMsg+'"':''),'Sent');
-      if(window.AndroidBridge) AndroidBridge.sendWhatsApp(ct.phone, finalMsg);
-      else showT('WhatsApp → '+ct.name+': '+finalMsg);
+      if(window.AndroidBridge) {
+        AndroidBridge.speak('Sending WhatsApp to ' + ct.name);
+        AndroidBridge.sendWhatsApp(ct.phone, finalMsg);
+      } else {
+        showT('WhatsApp → '+ct.name+': '+finalMsg);
+      }
       return;
     } else {
       var msg='No matching WhatsApp contact. Add contacts first.';
@@ -838,17 +940,14 @@ function processCmd(text, fromVoice){
     }
   }
 
-  // ─── APP LAUNCH INTENT ───
+  // ─── 4. APP LAUNCH INTENT ───
   var appKeys = Object.keys(APPS);
   var launchTarget = null;
-  // Check "open X" or "launch X" pattern
   var openMatch = lower.match(/(?:open|launch|start|show|jaav|khol)\s+(\w+(?:\s+\w+)?)/);
   if(openMatch){
     var appWord = openMatch[1].trim();
-    // direct map
     if(APPS[appWord]) launchTarget = appWord;
     else {
-      // partial match
       for(var k=0;k<appKeys.length;k++){
         if(appKeys[k].indexOf(appWord)!==-1 || appWord.indexOf(appKeys[k])!==-1){
           launchTarget=appKeys[k]; break;
@@ -856,7 +955,6 @@ function processCmd(text, fromVoice){
       }
     }
   }
-  // Also check if any app name is directly in the text
   if(!launchTarget){
     for(var k=0;k<appKeys.length;k++){
       if(lower.indexOf(appKeys[k])!==-1){ launchTarget=appKeys[k]; break; }
@@ -869,66 +967,124 @@ function processCmd(text, fromVoice){
     if(va){va.textContent='🚀 '+msg;va.style.display='block';}
     setDashReply('🚀 Launching '+appName);
     addHist('🚀','Opened '+appName,'Done');
+    if(window.AndroidBridge) AndroidBridge.speak('Opening ' + appName);
     launch(launchTarget);
     return;
   }
 
-  // ─── EMAIL INTENT ───
+  // ─── 5. EMAIL INTENT ───
   if(/\b(email|mail|gmail|inbox)\b/.test(lower)){
     G(22); addHist('📧','Email assistant opened','Done'); return;
   }
 
-  // ─── HISTORY INTENT ───
+  // ─── 6. HISTORY INTENT ───
   if(/\b(history|tasks|previous|last)\b/.test(lower)){
     G(23); return;
   }
 
-  // ─── SETTINGS INTENT ───
+  // ─── 7. SETTINGS INTENT ───
   if(/\b(setting|settings|permission)\b/.test(lower)){
     G(16); return;
   }
 
   // ─── FALLBACK ───
-  var reply='Got it: "'+text+'". I can call, WhatsApp, or launch apps for you.';
+  var reply='Got it: "'+text+'". Say "Call Mummy and talk with Mummy" or "Open YouTube"!';
   if(vt)vt.textContent=reply;
   if(va){va.style.display='none';}
   setDashReply(reply);
 }
 
+// ─── AI CALL & TALK MODAL LOGIC ───
+function openCallTalkModal(contact, speechScript){
+  activeCallTalk = { contact: contact, script: speechScript };
+  document.getElementById('ctContactName').textContent = contact.name;
+  document.getElementById('ctContactPhone').textContent = contact.phone;
+  document.getElementById('ctTranscript').textContent = '"' + speechScript + '"';
+  document.getElementById('callTalkModal').classList.add('show');
+
+  // Speak script out loud via TTS
+  if(window.AndroidBridge) {
+    AndroidBridge.speak(speechScript);
+  }
+
+  addHist('🗣️', 'Call & Talk on Behalf: ' + contact.name, 'Session Active');
+  setDashReply('🗣️ Calling & Talking with ' + contact.name + '...');
+}
+
+function confirmCallTalk(){
+  if(activeCallTalk && activeCallTalk.contact){
+    var ct = activeCallTalk.contact;
+    if(window.AndroidBridge) {
+      AndroidBridge.callPhone(ct.phone);
+    } else {
+      showT('Placing call to ' + ct.name + ' (' + ct.phone + ')');
+    }
+    closeCallTalk();
+  }
+}
+
+function closeCallTalk(){
+  document.getElementById('callTalkModal').classList.remove('show');
+  activeCallTalk = null;
+}
+
+function quickTalkBehalf(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
+  var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : null);
+  if(!ct){ showT('No call contact selected. Tap Manage to pick one.'); G(4); return; }
+  var script = "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar. Akshar asked me to talk with you. Hope you are having a wonderful day!";
+  openCallTalkModal(ct, script);
+}
+
 function setDashReply(msg){
   var el=document.getElementById('dashReply'); if(!el)return;
   el.textContent=msg;
-  setTimeout(function(){el.textContent='';},4000);
+  setTimeout(function(){el.textContent='';},4500);
 }
 
 // ─── QUICK ACTIONS ───
 function quickCall(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   if(S.callCtx.length===0){showT('No call contact selected. Tap Manage to pick one.');setTimeout(function(){G(4);},1200);return;}
   var ct=S.callCtx[0];
   addHist('📞','Called '+ct.name,'Done');
-  if(window.AndroidBridge) AndroidBridge.callPhone(ct.phone);
-  else showT('Calling '+ct.name+' ('+ct.phone+')');
+  if(window.AndroidBridge) {
+    AndroidBridge.speak('Calling ' + ct.name);
+    AndroidBridge.callPhone(ct.phone);
+  } else {
+    showT('Calling '+ct.name+' ('+ct.phone+')');
+  }
 }
+
 function quickWA(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   if(S.waCtx.length===0){showT('No WhatsApp contact selected. Tap Manage to pick one.');setTimeout(function(){G(4);},1200);return;}
   var ct=S.waCtx[0];
   addHist('💬','WhatsApp: '+ct.name,'Sent');
-  if(window.AndroidBridge) AndroidBridge.sendWhatsApp(ct.phone,'Hello '+ct.name+'!');
-  else showT('WhatsApp → '+ct.name);
+  if(window.AndroidBridge) {
+    AndroidBridge.speak('Opening WhatsApp for ' + ct.name);
+    AndroidBridge.sendWhatsApp(ct.phone,'Hello '+ct.name+'!');
+  } else {
+    showT('WhatsApp → '+ct.name);
+  }
 }
 
 // ─── APP LAUNCHER ───
 function launch(key){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   var k=key.toLowerCase().trim();
   var pkg=APPS[k]||k;
   addHist('🚀','Opened '+k.charAt(0).toUpperCase()+k.slice(1),'Done');
   if(window.AndroidBridge) AndroidBridge.openApp(pkg);
   else showT('Opening '+k+'...');
 }
+
 function launchCustom(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   var v=document.getElementById('customApp').value.trim(); if(!v)return;
   launch(v); document.getElementById('customApp').value='';
 }
+
 function filterApps(q){
   var lower=q.toLowerCase();
   document.querySelectorAll('#appGridFull .app-btn').forEach(function(b){
@@ -938,14 +1094,20 @@ function filterApps(q){
 }
 
 // ─── VOICE ───
-function startVoice(){ G(8); if(window.AndroidBridge)AndroidBridge.startVoice(); }
+function startVoice(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
+  G(8);
+  if(window.AndroidBridge) AndroidBridge.startVoice();
+}
+
 function trigVoice(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   var vs=document.getElementById('vState');
-  if(vs)vs.textContent='Listening...';
+  if(vs)vs.textContent='Listening... Speak now';
   var va=document.getElementById('vAction'); if(va)va.style.display='none';
   if(window.AndroidBridge) AndroidBridge.startVoice();
-  else{setTimeout(function(){if(vs)vs.textContent='Tap to speak';},2000);}
 }
+
 function setLang(l){
   S.lang=l;
   ['gu','hi','en'].forEach(function(x){
@@ -956,22 +1118,27 @@ function setLang(l){
   });
   if(window.AndroidBridge)AndroidBridge.showToast('Language: '+l.toUpperCase());
 }
+
 function runTextCmd(){
   var v=document.getElementById('vText'); var t=v?v.value.trim():''; if(!t)return;
   processCmd(t, false); if(v)v.value='';
 }
+
 function testCmd(t){
   var vt=document.getElementById('vTrans'); if(vt)vt.textContent='"'+t+'"';
   processCmd(t, false);
 }
+
+// Callback from native Android when speech is recognized
 window.onSpeechResult=function(text){
   var vt=document.getElementById('vTrans'); if(vt)vt.textContent='"'+text+'"';
   var vs=document.getElementById('vState'); if(vs)vs.textContent='Got it!';
   processCmd(text, true);
 };
+
 window.onSpeechState=function(s){
   var vs=document.getElementById('vState');
-  if(vs)vs.textContent=s==='listening'?'Listening... Speak now':'Tap to speak';
+  if(vs)vs.textContent=s==='listening'?'Listening... Speak now':'Tap mic to speak';
 };
 
 // ─── DASHBOARD TEXT INPUT ───
@@ -987,14 +1154,13 @@ function sendChat(){
   var inp=document.getElementById('chatIn'); var t=inp?inp.value.trim():''; if(!t)return;
   if(inp)inp.value='';
   var c=document.getElementById('chatMsgs');
-  // User bubble
   var ub=document.createElement('div');
   ub.style.cssText='display:flex;justify-content:flex-end;';
   ub.innerHTML='<div class="cb-user">'+esc(t)+'</div>';
   c.appendChild(ub); c.scrollTop=c.scrollHeight;
-  // Process command
+
   processCmd(t, false);
-  // Bot reply
+
   setTimeout(function(){
     var bb=document.createElement('div');
     bb.style.cssText='display:flex;gap:9px;align-items:flex-end;';
@@ -1003,14 +1169,18 @@ function sendChat(){
     c.appendChild(bb); c.scrollTop=c.scrollHeight;
   }, 600);
 }
+
 function botReply(t){
+  if(!S.agentOn) return 'Agent is paused. Turn Agent ON at top right to execute tasks.';
   var l=t.toLowerCase();
-  if(/call|ring/.test(l)){var ct=findContact(l,S.callCtx.length?S.callCtx:S.contacts);return ct?'Calling '+ct.name+' now — check your phone.':'No contact found. Tap Devices → Manage Contacts to add call contacts.';}
-  if(/whatsapp|wa|message/.test(l)){var ct=findContact(l,S.waCtx.length?S.waCtx:S.contacts);return ct?'Sending WhatsApp to '+ct.name+'...':'No contact found. Add WhatsApp contacts first.';}
+  if(/talk|behalf/.test(l)) return 'Formulating conversation and initiating call on your behalf...';
+  if(/call|ring/.test(l)){var ct=findContact(l,S.callCtx.length?S.callCtx:S.contacts);return ct?'Calling '+ct.name+' directly now.':'No contact found. Tap Manage Contacts to add call contacts.';}
+  if(/whatsapp|wa|message/.test(l)){var ct=findContact(l,S.waCtx.length?S.waCtx:S.contacts);return ct?'Opening WhatsApp for '+ct.name+'...':'No contact found. Add WhatsApp contacts first.';}
   if(/open|launch/.test(l)) return 'Launching the app on your device...';
   if(/email|mail/.test(l)) return 'Opening email assistant...';
-  return 'Got it! Processing "'+esc(t)+'". What else can I help with?';
+  return 'Got it! Processing "'+esc(t)+'". What else can I do for you?';
 }
+
 function clearChat(){ var c=document.getElementById('chatMsgs'); if(c)c.innerHTML=''; }
 
 // ─── UTILS ───
@@ -1032,7 +1202,6 @@ window.addEventListener('DOMContentLoaded',function(){
     setTimeout(function(){bar.style.width='88%';if(stat)stat.textContent='Starting AI brain...';},1300);
     setTimeout(function(){bar.style.width='100%';if(stat)stat.textContent='Ready!';},2100);
   }
-  // Restore last screen
   if(S.cur && S.cur!==1){
     setTimeout(function(){ G(S.cur); },100);
   }

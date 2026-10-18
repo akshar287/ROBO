@@ -332,15 +332,53 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    companion object {
+        private const val REQUEST_CODE_SPEECH = 101
+    }
+
     private fun startListening() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "gu-IN")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "gu-IN")
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak in Gujarati, Hindi, or English")
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 100)
+            Toast.makeText(this, "Microphone permission required for voice commands", Toast.LENGTH_SHORT).show()
+            return
         }
-        speechRecognizer?.startListening(intent)
+
+        runOnUiThread {
+            webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('listening');", null)
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to ROBO (Gujarati, Hindi, English)")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            }
+            try {
+                startActivityForResult(intent, REQUEST_CODE_SPEECH)
+            } catch (e: Exception) {
+                Log.e("ROBO_VOICE", "Speech activity failed, trying speechRecognizer: ${e.message}")
+                if (speechRecognizer != null) {
+                    speechRecognizer?.startListening(intent)
+                } else {
+                    Toast.makeText(this, "Voice recognition not available. Please install Google Speech.", Toast.LENGTH_SHORT).show()
+                    webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('ready');", null)
+                }
+            }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_SPEECH) {
+            webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('ready');", null)
+            if (resultCode == RESULT_OK && data != null) {
+                val matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                if (!matches.isNullOrEmpty()) {
+                    val recognizedText = matches[0]
+                    Log.d("ROBO_VOICE", "Recognized speech from dialog: $recognizedText")
+                    val escaped = recognizedText.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
+                    webView.evaluateJavascript("if (window.onSpeechResult) window.onSpeechResult('$escaped');", null)
+                }
+            }
+        }
     }
 
     fun speak(text: String) {
