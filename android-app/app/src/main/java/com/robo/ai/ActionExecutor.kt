@@ -16,25 +16,74 @@ object ActionExecutor {
      */
     fun openApp(context: Context, appName: String): Boolean {
         try {
-            val pkg = when (appName.lowercase()) {
+            val key = appName.lowercase().trim()
+            val pkg = when (key) {
                 "youtube" -> "com.google.android.youtube"
                 "whatsapp" -> "com.whatsapp"
                 "chrome" -> "com.android.chrome"
                 "gmail" -> "com.google.android.gm"
-                "maps" -> "com.google.android.apps.maps"
+                "maps", "google maps" -> "com.google.android.apps.maps"
                 "camera" -> "com.google.android.GoogleCamera"
-                else -> appName
+                "playstore", "play store", "play" -> "com.android.vending"
+                "alarm", "clock", "timer" -> "com.google.android.deskclock"
+                "settings" -> "com.android.settings"
+                "photos", "gallery" -> "com.google.android.apps.photos"
+                "calendar" -> "com.google.android.calendar"
+                "calculator" -> "com.google.android.calculator"
+                "contacts" -> "com.google.android.contacts"
+                "phone", "dialer" -> "com.google.android.dialer"
+                "messages", "sms" -> "com.google.android.apps.messaging"
+                "drive" -> "com.google.android.apps.docs"
+                "instagram" -> "com.instagram.android"
+                "spotify" -> "com.spotify.music"
+                "netflix" -> "com.netflix.mediaclient"
+                "telegram" -> "org.telegram.messenger"
+                "twitter", "x" -> "com.twitter.android"
+                "facebook" -> "com.facebook.katana"
+                "zoom" -> "us.zoom.videomeetings"
+                "meet" -> "com.google.android.apps.meetings"
+                "docs" -> "com.google.android.apps.docs.editors.docs"
+                "sheets" -> "com.google.android.apps.docs.editors.sheets"
+                "slides" -> "com.google.android.apps.docs.editors.slides"
+                "teams" -> "com.microsoft.teams"
+                "outlook" -> "com.microsoft.office.outlook"
+                "amazon" -> "com.amazon.mShop.android.shopping"
+                "flipkart" -> "com.flipkart.android"
+                "paytm" -> "net.one97.paytm"
+                "gpay", "google pay" -> "com.google.android.apps.nbu.paisa.user"
+                "phonepe" -> "com.phonepe.app"
+                "swiggy" -> "in.swiggy.android"
+                "zomato" -> "com.application.zomato"
+                else -> key  // treat as package name directly
             }
 
+            // Try by resolved package name first
             val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)
             if (launchIntent != null) {
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(launchIntent)
+                Log.d(TAG, "Opened app: $pkg")
                 return true
-            } else {
-                // Fallback: search Play Store if app not installed
-                return searchPlayStore(context, appName)
             }
+
+            // If exact package fails, try a fuzzy search in installed apps
+            val pm = context.packageManager
+            val installed = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
+            val match = installed.firstOrNull { info ->
+                pm.getApplicationLabel(info).toString().lowercase().contains(key) ||
+                info.packageName.lowercase().contains(key)
+            }
+            if (match != null) {
+                val intent = pm.getLaunchIntentForPackage(match.packageName)
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                    return true
+                }
+            }
+
+            // Final fallback: search Play Store
+            return searchPlayStore(context, appName)
         } catch (e: Exception) {
             Log.e(TAG, "Error opening app $appName: ${e.message}")
             return false

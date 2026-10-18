@@ -4,9 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.ContactsContract
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -19,6 +21,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.*
 
 class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
@@ -164,6 +168,54 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
             }
         }
+
+        /**
+         * Returns contacts as JSON string synchronously.
+         * Also fires window.onContactsLoaded for async update.
+         */
+        @JavascriptInterface
+        fun getContacts(): String {
+            return loadDeviceContacts()
+        }
+
+        /**
+         * Async-friendly: loads contacts then calls back into JS.
+         */
+        @JavascriptInterface
+        fun loadContacts() {
+            scope.launch(Dispatchers.IO) {
+                val json = loadDeviceContacts()
+                withContext(Dispatchers.Main) {
+                    val escaped = json.replace("\\", "\\\\").replace("'", "\\'")
+                    webView.evaluateJavascript(
+                        "if (window.onContactsLoaded) window.onContactsLoaded('$escaped');",
+                        null
+                    )
+                }
+            }
+        }
+
+        /**
+         * Returns list of installed app package names as JSON array.
+         */
+        @JavascriptInterface
+        fun getInstalledApps(): String {
+            return try {
+                val pm = packageManager
+                val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+                val arr = JSONArray()
+                apps.filter { pm.getLaunchIntentForPackage(it.packageName) != null }
+                    .forEach { info ->
+                        val obj = JSONObject()
+                        obj.put("package", info.packageName)
+                        obj.put("name", pm.getApplicationLabel(info).toString())
+                        arr.put(obj)
+                    }
+                arr.toString()
+            } catch (e: Exception) {
+                "[]"
+            }
+        }
     }
 
     private fun startRoboService() {
@@ -242,7 +294,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private fun requestPermissionsIfNeeded() {
         val permissions = mutableListOf(
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_CONTACTS
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
@@ -253,6 +306,45 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 100)
+        }
+    }
+
+    /**
+     * Reads real device contacts from ContentProvider.
+     * Returns JSON array: [{"name":"...","phone":"..."}]
+     */
+    private fun loadDeviceContacts(): String {
+        return try {
+            val arr = JSONArray()
+            val cursor: Cursor? = contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    ContactsContract.CommonDataKinds.Phone.NUMBER
+                ),
+                null, null,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+            )
+            val seen = mutableSetOf<String>()
+            cursor?.use { c ->
+                val nameIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val phoneIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                while (c.moveToNext()) {
+                    val name = c.getString(nameIdx) ?: continue
+                    val phone = c.getString(phoneIdx)?.replace("\\s".toRegex(), "") ?: continue
+                    val key = name + phone
+                    if (key in seen) continue
+                    seen.add(key)
+                    val obj = JSONObject()
+                    obj.put("name", name)
+                    obj.put("phone", phone)
+                    arr.put(obj)
+                }
+            }
+            arr.toString()
+        } catch (e: Exception) {
+            Log.e("ROBO_CONTACTS", "Error loading contacts: ${e.message}")
+            "[]"
         }
     }
 
