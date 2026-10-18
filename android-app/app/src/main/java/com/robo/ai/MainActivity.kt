@@ -280,6 +280,77 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 "[]"
             }
         }
+
+        @JavascriptInterface
+        fun enableSpeakerphone(enable: Boolean) {
+            runOnUiThread {
+                try {
+                    val am = getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+                    am.isSpeakerphoneOn = enable
+                    if (enable) {
+                        am.mode = android.media.AudioManager.MODE_IN_COMMUNICATION
+                    } else {
+                        am.mode = android.media.AudioManager.MODE_NORMAL
+                    }
+                    Log.d("ROBO_AUDIO", "Speakerphone toggled: $enable")
+                } catch (e: Exception) {
+                    Log.e("ROBO_AUDIO", "Error setting speakerphone: ${e.message}")
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun speakInCall(text: String) {
+            runOnUiThread {
+                this@MainActivity.speak(text, "in_call_speech")
+            }
+        }
+
+        @JavascriptInterface
+        fun queryOllama(endpoint: String, model: String, prompt: String, callbackId: String) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val targetEndpoint = if (endpoint.isBlank()) "http://10.0.2.2:11434" else endpoint.trim().trimEnd('/')
+                    val targetModel = if (model.isBlank()) "llama3" else model.trim()
+                    val url = java.net.URL("$targetEndpoint/api/generate")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.doOutput = true
+                    conn.connectTimeout = 5000
+                    conn.readTimeout = 12000
+
+                    val payload = JSONObject().apply {
+                        put("model", targetModel)
+                        put("prompt", prompt)
+                        put("stream", false)
+                    }
+                    conn.outputStream.use { os ->
+                        os.write(payload.toString().toByteArray(Charsets.UTF_8))
+                    }
+
+                    if (conn.responseCode == 200) {
+                        val resp = conn.inputStream.bufferedReader(Charsets.UTF_8).readText()
+                        val json = JSONObject(resp)
+                        val responseText = json.optString("response", "")
+                        withContext(Dispatchers.Main) {
+                            val escaped = responseText.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
+                            webView.evaluateJavascript("if (window.onOllamaResult) window.onOllamaResult('$callbackId', '$escaped');", null)
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            webView.evaluateJavascript("if (window.onOllamaError) window.onOllamaError('$callbackId', 'HTTP ${conn.responseCode}');", null)
+                        }
+                    }
+                    conn.disconnect()
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        val escaped = (e.message ?: "Failed").replace("'", "\\'")
+                        webView.evaluateJavascript("if (window.onOllamaError) window.onOllamaError('$callbackId', '$escaped');", null)
+                    }
+                }
+            }
+        }
     }
 
     private fun startRoboService() {
@@ -381,8 +452,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    fun speak(text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "robo_speech")
+    fun speak(text: String, utteranceId: String = "robo_speech") {
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
     override fun onInit(status: Int) {
@@ -391,6 +462,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             if (tts?.isLanguageAvailable(Locale("gu", "IN")) != TextToSpeech.LANG_AVAILABLE) {
                 tts?.language = Locale("hi", "IN")
             }
+            tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {}
+                override fun onDone(utteranceId: String?) {
+                    runOnUiThread {
+                        webView.evaluateJavascript("if (window.onTtsFinished) window.onTtsFinished('$utteranceId');", null)
+                    }
+                }
+                override fun onError(utteranceId: String?) {}
+            })
         }
     }
 
@@ -398,7 +478,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val permissions = mutableListOf(
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.READ_CONTACTS,
-            Manifest.permission.CALL_PHONE
+            Manifest.permission.CALL_PHONE,
+            Manifest.permission.MODIFY_AUDIO_SETTINGS,
+            Manifest.permission.READ_PHONE_STATE
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)

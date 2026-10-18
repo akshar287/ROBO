@@ -22,6 +22,10 @@
     <!-- Contacts permission for reading real phone contacts -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <!-- Audio & phone state for real-time in-call conversational agent -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
     <!-- Package query permission for launching installed apps & Play Store (Android 11+) -->
     <queries>
         <intent>

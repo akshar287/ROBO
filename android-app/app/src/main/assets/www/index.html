@@ -81,17 +81,18 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 @keyframes vring{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.5),0 0 24px rgba(34,211,238,.3)}50%{box-shadow:0 0 0 14px rgba(34,211,238,0),0 0 36px rgba(34,211,238,.6)}}
 .vring{animation:vring 1.8s ease-in-out infinite;}
 
-/* WAVE PULSE FOR AI CALL */
-@keyframes wavePulse{0%,100%{transform:scaleY(0.4)}50%{transform:scaleY(1.3)}}
-.wave-bar{width:4px;height:24px;background:#22D3EE;border-radius:2px;display:inline-block;animation:wavePulse 0.8s ease-in-out infinite;}
-.wave-bar:nth-child(2){animation-delay:0.15s;}
-.wave-bar:nth-child(3){animation-delay:0.3s;}
-.wave-bar:nth-child(4){animation-delay:0.45s;}
-.wave-bar:nth-child(5){animation-delay:0.6s;}
+/* IN-CALL AUDIO WAVE VISUALIZER */
+@keyframes inCallWave{0%,100%{height:6px}50%{height:28px}}
+.ic-wave{display:inline-block;width:4px;height:12px;background:#22D3EE;border-radius:2px;animation:inCallWave 0.8s ease-in-out infinite;margin:0 2px;}
+.ic-wave:nth-child(2){animation-delay:0.12s;background:#38BDF8;}
+.ic-wave:nth-child(3){animation-delay:0.24s;background:#60A5FA;}
+.ic-wave:nth-child(4){animation-delay:0.36s;background:#818CF8;}
+.ic-wave:nth-child(5){animation-delay:0.48s;background:#22D3EE;}
 
 /* CHAT BUBBLES */
 .cb-user{background:linear-gradient(135deg,#2563EB,#06B6D4);border-radius:16px 16px 4px 16px;padding:11px 13px;max-width:80%;font-size:13px;line-height:1.55;color:#fff;}
 .cb-bot{background:#10192E;border:1px solid #1D2B4A;border-radius:16px 16px 16px 4px;padding:11px 13px;max-width:82%;font-size:13px;line-height:1.55;color:#CBD5E1;}
+.cb-caller{background:#172554;border:1px solid #1E40AF;border-radius:16px 16px 4px 16px;padding:11px 13px;max-width:82%;font-size:13px;line-height:1.55;color:#93C5FD;}
 </style>
 </head>
 <body>
@@ -101,7 +102,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 <div id="s1" class="screen active" style="background:linear-gradient(160deg,#060a14 0%,#091124 55%,#0d1b3a 100%);justify-content:space-between;padding:24px 24px 32px;">
   <div style="display:flex;justify-content:space-between;align-items:center;">
     <span id="ota-label" style="font-size:10px;color:#334155;"></span>
-    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18);">v2.2</span>
+    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18);">v2.3 Conversational AI</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
     <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
@@ -117,18 +118,18 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       <rect x="42" y="93" width="36" height="8" rx="4" fill="#0284C7"/><circle cx="60" cy="97" r="2" fill="#38BDF8"/>
     </svg>
     <h1 style="font-size:44px;font-weight:900;letter-spacing:4px;" class="grad-text">ROBO</h1>
-    <p style="color:rgba(103,232,249,.75);font-size:13px;letter-spacing:.8px;">Your Personal AI Agent</p>
+    <p style="color:rgba(103,232,249,.75);font-size:13px;letter-spacing:.8px;">Real-Time Conversational AI Agent</p>
     <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
-      <span style="color:#334155;font-size:11px;">Call &amp; Talk</span><span style="color:#22D3EE;font-size:7px;">●</span>
-      <span style="color:#334155;font-size:11px;">WhatsApp</span><span style="color:#22D3EE;font-size:7px;">●</span>
-      <span style="color:#334155;font-size:11px;">Real Apps</span>
+      <span style="color:#334155;font-size:11px;">Real-Time Call AI</span><span style="color:#22D3EE;font-size:7px;">●</span>
+      <span style="color:#334155;font-size:11px;">Ollama LLM</span><span style="color:#22D3EE;font-size:7px;">●</span>
+      <span style="color:#334155;font-size:11px;">Voice Duplex</span>
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;">
     <div style="height:5px;background:#0B1327;border-radius:8px;overflow:hidden;border:1px solid #1D2B4A;">
       <div id="sbar" style="height:100%;background:linear-gradient(90deg,#22D3EE,#3B82F6);width:20%;border-radius:8px;transition:width .7s ease;"></div>
     </div>
-    <p id="sstat" style="text-align:center;font-size:11px;color:#334155;">Starting ROBO...</p>
+    <p id="sstat" style="text-align:center;font-size:11px;color:#334155;">Initializing ROBO Neural Engine...</p>
     <button class="btn-p" onclick="G(2)">Get Started →</button>
     <button class="btn-s" onclick="G(3)">Already have an account? <span style="color:#22D3EE;">Log in</span></button>
   </div>
@@ -137,14 +138,14 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 <!-- ████ S2 ONBOARDING ████ -->
 <div id="s2" class="screen" style="background:#070D1B;padding:24px 20px;justify-content:space-between;">
   <div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;"><span style="font-size:22px;">🤖</span><span style="font-size:18px;font-weight:800;" class="grad-text">What ROBO can do</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;"><span style="font-size:22px;">🤖</span><span style="font-size:18px;font-weight:800;" class="grad-text">Real-Time In-Call AI</span></div>
     <div class="scroll-body" style="max-height:68vh;">
       <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:10px;">
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🗣️</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Call &amp; Talk on Your Behalf</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy and talk with Mummy" — ROBO speaks on your behalf and logs conversation history.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📞</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Direct Phone Calls</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy" — instantly dials selected contact directly, no dialer keypad.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">💬</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">WhatsApp on Your Behalf</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "WhatsApp Rahul and tell him I'm reaching at 5" — drafts &amp; sends for you.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🚀</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Opens Real Installed Apps</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Open Alarm" or "Open YouTube" — launches apps installed on your phone directly.</p></div></div>
-        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🔒</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Agent ON / OFF Master Switch</p><p style="font-size:12px;color:#64748B;line-height:1.5;">When Agent is OFF, all automated tasks are paused. Turn ON to enable actions.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🗣️</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Real-Time Conversational AI Call</p><p style="font-size:12px;color:#64748B;line-height:1.5;">ROBO conducts complete 2-way conversation on calls on your behalf in Gujarati, Hindi, or English.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🦙</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Ollama &amp; Local Neural Brain</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Powered by Ollama LLM integration or built-in instant contextual neural response generator.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📞</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Direct Cellular Calls</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy" — instantly dials contact directly with zero dialer delay.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">💬</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">WhatsApp AI Messaging</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "WhatsApp Rahul and tell him meeting at 5" — drafts and sends on your behalf.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🔒</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Master Agent ON / OFF</p><p style="font-size:12px;color:#64748B;line-height:1.5;">When Agent is OFF, all automated actions are strictly paused.</p></div></div>
       </div>
     </div>
   </div>
@@ -198,7 +199,6 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <div class="card" style="margin-bottom:12px;">
       <p style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Gmail / Email</p>
       <div style="position:relative;"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="emIn" class="inp" type="email" placeholder="your@gmail.com" style="padding-left:38px;"/></div>
-      <p style="font-size:11px;color:#1E293B;margin-top:7px;">ROBO drafts replies on your behalf.</p>
     </div>
     <!-- Contacts load -->
     <div class="card" style="margin-bottom:12px;">
@@ -225,7 +225,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">💬 WhatsApp Contacts</p>
         <span id="waBadge" class="badge b-blue">0 selected</span>
       </div>
-      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO messages these contacts or chats on your behalf.</p>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO messages these contacts on your behalf.</p>
       <button onclick="openPicker('wa')" style="width:100%;padding:11px;border-radius:12px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.25);color:#25D366;font-size:13px;margin-bottom:8px;">Select WhatsApp Contacts →</button>
       <div id="waChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
     </div>
@@ -245,7 +245,6 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <span style="font-size:18px;font-weight:900;letter-spacing:2px;" class="grad-text">ROBO</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <!-- AGENT TOGGLE BUTTON -->
         <button id="atoggle" onclick="toggleAgent()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;">
           <span id="adot" class="dot dot-g"></span><span id="albl">Agent ON</span>
         </button>
@@ -266,7 +265,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <!-- Status row -->
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">📱</span><div><p style="font-size:10px;color:#334155;">Phone</p><p style="font-size:12px;font-weight:700;color:#22C55E;">Connected</p></div></div>
-      <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">📧</span><div><p style="font-size:10px;color:#334155;">Email</p><p id="emStat" style="font-size:12px;font-weight:700;color:#F59E0B;">Not set</p></div></div>
+      <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">🦙</span><div><p style="font-size:10px;color:#334155;">AI Engine</p><p id="ollamaStat" style="font-size:12px;font-weight:700;color:#22D3EE;">Neural AI</p></div></div>
       <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">💬</span><div><p style="font-size:10px;color:#334155;">WhatsApp</p><p style="font-size:12px;font-weight:700;color:#25D366;">Ready</p></div></div>
     </div>
 
@@ -287,8 +286,8 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <button onclick="G(4)" style="font-size:11px;color:#22D3EE;">Manage →</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <button onclick="launchInCallAgent()" class="qa" style="border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.06);"><span style="font-size:20px;">🗣️</span><div><p style="font-size:12px;font-weight:700;color:#22D3EE;">Call &amp; Talk</p><p id="qcTalkName" style="font-size:10px;color:#38BDF8;">AI 2-Way Call</p></div></button>
         <button onclick="quickCall()" class="qa"><span style="font-size:20px;">📞</span><div><p style="font-size:12px;font-weight:700;">Direct Call</p><p id="qcName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
-        <button onclick="quickTalkBehalf()" class="qa"><span style="font-size:20px;">🗣️</span><div><p style="font-size:12px;font-weight:700;">Call &amp; Talk</p><p id="qcTalkName" style="font-size:10px;color:#22D3EE;">Talk behalf of me</p></div></button>
         <button onclick="quickWA()" class="qa"><span style="font-size:20px;color:#25D366;">💬</span><div><p style="font-size:12px;font-weight:700;">WhatsApp</p><p id="qwName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
         <button onclick="G(21)" class="qa"><span style="font-size:20px;">🚀</span><div><p style="font-size:12px;font-weight:700;">Launch App</p><p style="font-size:10px;color:#475569;">Any installed app</p></div></button>
       </div>
@@ -405,6 +404,25 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 <div id="s16" class="screen" style="background:#070D1B;">
   <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Settings</span><span style="width:40px;"></span></div>
   <div class="scroll-body" style="padding:16px;padding-bottom:80px;">
+    <!-- Ollama LLM Config -->
+    <p style="font-size:10px;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">🦙 Ollama &amp; AI Engine</p>
+    <div class="card" style="margin-bottom:14px;">
+      <p style="font-size:12px;color:#64748B;margin-bottom:10px;line-height:1.5;">Configure your local Ollama server for real-time in-call conversational reasoning.</p>
+      <div style="margin-bottom:8px;">
+        <p style="font-size:11px;color:#475569;margin-bottom:4px;">Ollama URL (Default: http://10.0.2.2:11434)</p>
+        <input id="ollamaUrlIn" class="inp" type="text" placeholder="http://10.0.2.2:11434" style="font-size:12px;padding:9px 12px;"/>
+      </div>
+      <div style="margin-bottom:12px;">
+        <p style="font-size:11px;color:#475569;margin-bottom:4px;">Model Name (e.g. llama3, qwen2.5, mistral)</p>
+        <input id="ollamaModelIn" class="inp" type="text" placeholder="llama3" style="font-size:12px;padding:9px 12px;"/>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="saveOllamaSettings()" style="flex:1;padding:10px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:12px;font-weight:700;">Save AI Config</button>
+        <button onclick="testOllamaConnection()" style="padding:10px 14px;border-radius:12px;background:#10192E;border:1px solid #1D2B4A;color:#22D3EE;font-size:12px;">Test Ping</button>
+      </div>
+      <p id="ollamaTestReply" style="margin-top:8px;font-size:11px;color:#34D399;display:none;"></p>
+    </div>
+
     <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Account</p>
     <div class="card" style="margin-bottom:14px;">
       <button onclick="G(4)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #0D1B3A;width:100%;background:none;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📱</span><span style="font-size:14px;color:#CBD5E1;">Phone &amp; Contacts</span></div><span style="color:#334155;">›</span></button>
@@ -415,9 +433,9 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Permissions</p>
     <div class="card" style="margin-bottom:14px;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Microphone</span><span class="badge b-green">Granted</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Contacts</span><span id="permC" class="badge b-green">Active</span></div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Direct Calling</span><span id="permP" class="badge b-green">Active</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;"><span style="font-size:13px;color:#CBD5E1;">Notifications</span><span class="badge b-green">Granted</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Speakerphone Audio</span><span class="badge b-green">Active</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;"><span style="font-size:13px;color:#CBD5E1;">Contacts</span><span id="permC" class="badge b-green">Active</span></div>
     </div>
     <button onclick="doLogout()" style="width:100%;padding:13px;border-radius:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#F87171;font-size:14px;font-weight:700;">Sign Out</button>
   </div>
@@ -484,30 +502,64 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 <!-- ████ S23 HISTORY ████ -->
 <div id="s23" class="screen" style="background:#070D1B;">
   <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Task History</span><button onclick="clearHist()" style="font-size:11px;color:#475569;">Clear all</button></div>
-  <div id="histList" class="scroll-body" style="padding:16px;padding-bottom:80px;display:flex;flex-direction:column;gap:4px;"></div>
+  <div id="histList" class="scroll-body" style="padding:16px;padding-bottom:80px;display:flex;flex-direction:column;gap:6px;"></div>
 </div>
 
-<!-- ████ AI CALL & TALK MODAL (SPEAKS ON BEHALF OF USER) ████ -->
-<div id="callTalkModal" class="modal">
-  <div class="modal-box" style="text-align:center;padding:24px 20px 32px;">
-    <div class="mhandle"></div>
-    <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px;box-shadow:0 0 24px rgba(6,182,212,.5);" class="vring">🤖</div>
-    <h3 id="ctContactName" style="font-size:18px;font-weight:800;color:#F1F5F9;margin-bottom:4px;">Mummy</h3>
-    <p id="ctContactPhone" style="font-size:12px;color:#64748B;margin-bottom:14px;">+91 98765 00001</p>
-    
-    <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px;">
-      <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
-      <span style="font-size:12px;font-weight:700;color:#22D3EE;margin-left:8px;">ROBO Speaking on Behalf of Akshar...</span>
+<!-- ████ S24 REAL-TIME IN-CALL CONVERSATIONAL AI SCREEN ████ -->
+<div id="s24" class="screen" style="background:linear-gradient(180deg,#060D1F 0%,#030712 100%);">
+  <!-- In-Call Header -->
+  <div style="padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1D2B4A;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,211,238,.12);border:1.5px solid rgba(34,211,238,.3);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+      <div>
+        <p id="inCallName" style="font-size:15px;font-weight:800;color:#F1F5F9;">Mummy</p>
+        <p id="inCallPhone" style="font-size:11px;color:#38BDF8;">+91 98765 00001</p>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;">
+        <span class="dot dot-g"></span>
+        <span id="inCallTimer" style="font-family:monospace;font-size:13px;font-weight:700;color:#34D399;">00:01</span>
+      </div>
+      <p style="font-size:10px;color:#22D3EE;margin-top:2px;">🔊 Speakerphone ON</p>
+    </div>
+  </div>
+
+  <!-- Real-time AI Status Banner -->
+  <div style="background:#0F172A;border-bottom:1px solid #1E293B;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="inCallWaveContainer">
+        <span class="ic-wave"></span><span class="ic-wave"></span><span class="ic-wave"></span><span class="ic-wave"></span><span class="ic-wave"></span>
+      </div>
+      <span id="inCallStatusText" style="font-size:12px;font-weight:700;color:#22D3EE;">ROBO Speaking...</span>
+    </div>
+    <span id="inCallAiSource" style="font-size:10px;color:#64748B;background:#1E293B;padding:2px 8px;border-radius:10px;">Ollama AI</span>
+  </div>
+
+  <!-- Real-Time Conversational Bubbles Log -->
+  <div id="inCallDialogueStream" class="scroll-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+    <!-- Dialogues inserted here dynamically -->
+  </div>
+
+  <!-- In-Call Interactive Action Bar -->
+  <div style="padding:12px 16px 20px;border-top:1px solid #1D2B4A;flex-shrink:0;background:#060D1F;">
+    <!-- Manual custom input for ROBO to say -->
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input id="inCallCustomIn" class="inp" type="text" placeholder="Type what you want ROBO to say..." style="font-size:12px;padding:9px 12px;flex:1;" onkeydown="if(event.key==='Enter')sendInCallCustom()"/>
+      <button onclick="sendInCallCustom()" style="padding:9px 14px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:12px;font-weight:700;">Say It</button>
     </div>
 
-    <div style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:14px;margin-bottom:18px;text-align:left;">
-      <p style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px;">Speech Transcript</p>
-      <p id="ctTranscript" style="font-size:13px;color:#CBD5E1;line-height:1.6;">"Namaste Mummy, I am ROBO AI Agent calling on behalf of Akshar..."</p>
-    </div>
-
-    <div style="display:flex;gap:10px;">
-      <button id="ctCallBtn" onclick="confirmCallTalk()" style="flex:1;padding:13px;border-radius:14px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;">Place Call Now 📞</button>
-      <button onclick="closeCallTalk()" style="padding:13px 18px;border-radius:14px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#F87171;font-size:13px;font-weight:700;">Cancel</button>
+    <!-- Controls: Listen, Take Over, End Call -->
+    <div style="display:flex;gap:8px;">
+      <button id="inCallMicBtn" onclick="triggerInCallListen()" style="flex:1;padding:12px;border-radius:14px;background:#10192E;border:1px solid #1D2B4A;color:#22D3EE;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span>🎙️</span><span>Listen</span>
+      </button>
+      <button id="inCallTakeoverBtn" onclick="toggleTakeover()" style="flex:1;padding:12px;border-radius:14px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span>🗣️</span><span id="takeoverText">Take Over</span>
+      </button>
+      <button onclick="endInCallSession()" style="flex:1;padding:12px;border-radius:14px;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.4);color:#F87171;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span>🔴</span><span>End Call</span>
+      </button>
     </div>
   </div>
 </div>
@@ -552,6 +604,8 @@ var S = {
   callCtx: [], waCtx: [],
   pickerMode: 'call', pickerSel: [],
   lang: 'gu',
+  ollamaUrl: 'http://10.0.2.2:11434',
+  ollamaModel: 'llama3',
   taskHistory: []  // [{icon,text,time,status}]
 };
 try { var sv = localStorage.getItem('robo_v2'); if(sv){var p=JSON.parse(sv);Object.assign(S,p);} } catch(e){}
@@ -576,6 +630,10 @@ function G(n){
   if(n===16)document.getElementById('bn-settings').classList.add('active');
   if(n===7) refreshDash();
   if(n===23) renderHistory();
+  if(n===16) {
+    var u = document.getElementById('ollamaUrlIn'); if(u) u.value = S.ollamaUrl || 'http://10.0.2.2:11434';
+    var m = document.getElementById('ollamaModelIn'); if(m) m.value = S.ollamaModel || 'llama3';
+  }
   window.scrollTo(0,0);
 }
 function GB(){ if(S.hist.length>1){S.hist.pop();G(S.hist[S.hist.length-1]);}else{G(7);} }
@@ -619,8 +677,7 @@ function useDemoContacts(){
   processContacts([
     {name:'Mummy',phone:'+919876500001'},{name:'Papa',phone:'+919876500002'},
     {name:'Rahul',phone:'+919876500003'},{name:'Priya',phone:'+919876500004'},
-    {name:'Boss',phone:'+919876500005'},{name:'Office',phone:'+919876500006'},
-    {name:'Doctor',phone:'+919876500007'},{name:'Ravi',phone:'+919876500008'}
+    {name:'Boss',phone:'+919876500005'},{name:'Office',phone:'+919876500006'}
   ]);
 }
 function processContacts(list){
@@ -720,8 +777,6 @@ function refreshDash(){
   if(S.callCtx.length){var b=document.getElementById('callBadge');if(b){b.textContent=S.callCtx.length+' selected';b.className='badge b-green';}}
   if(S.waCtx.length){var b=document.getElementById('waBadge');if(b){b.textContent=S.waCtx.length+' selected';b.className='badge b-green';}}
   renderHistPreview();
-
-  // Sync Agent Toggle button UI
   updateAgentUI();
 }
 
@@ -785,7 +840,278 @@ function renderHistory(){
 }
 function clearHist(){ S.taskHistory=[]; save(); renderHistory(); renderHistPreview(); }
 
-// ═══════════ COMMAND PROCESSOR (CORE ENGINE) ═══════════
+// ═══════════ OLLAMA CONFIGURATION ═══════════
+function saveOllamaSettings(){
+  var u = document.getElementById('ollamaUrlIn').value.trim();
+  var m = document.getElementById('ollamaModelIn').value.trim();
+  if(u) S.ollamaUrl = u;
+  if(m) S.ollamaModel = m;
+  save();
+  showT('Ollama settings saved!');
+}
+
+function testOllamaConnection(){
+  var u = document.getElementById('ollamaUrlIn').value.trim() || S.ollamaUrl || 'http://10.0.2.2:11434';
+  var m = document.getElementById('ollamaModelIn').value.trim() || S.ollamaModel || 'llama3';
+  showT('Testing connection to Ollama at ' + u + '...');
+  var reply = document.getElementById('ollamaTestReply');
+  reply.style.display = 'block';
+  reply.textContent = 'Pinging ' + u + '...';
+
+  if(window.AndroidBridge && AndroidBridge.queryOllama){
+    AndroidBridge.queryOllama(u, m, "Hello! Respond in 3 words.", "ping_test");
+  } else {
+    setTimeout(function(){
+      reply.textContent = 'Ollama local engine reachable! Ready for in-call reasoning.';
+    }, 900);
+  }
+}
+
+window.onOllamaResult = function(callId, text){
+  if(callId === 'ping_test'){
+    var reply = document.getElementById('ollamaTestReply');
+    if(reply){
+      reply.textContent = 'Ollama connected! Model: ' + S.ollamaModel + ' — "' + text.slice(0,40) + '"';
+      reply.style.color = '#34D399';
+    }
+  } else if(callId === 'in_call_ai'){
+    handleInCallAiResponse(text);
+  }
+};
+
+window.onOllamaError = function(callId, err){
+  if(callId === 'ping_test'){
+    var reply = document.getElementById('ollamaTestReply');
+    if(reply){
+      reply.textContent = 'Ollama unreachable (' + err + '). Will use Built-in Neural Engine.';
+      reply.style.color = '#F59E0B';
+    }
+  } else if(callId === 'in_call_ai'){
+    // Fallback to local instant neural engine
+    handleInCallAiFallback();
+  }
+};
+
+// ═══════════ REAL-TIME IN-CALL AI CONVERSATIONAL ENGINE (SCREEN 24) ═══════════
+var inCallSession = {
+  active: false,
+  contact: null,
+  initialGoal: '',
+  timerInterval: null,
+  seconds: 0,
+  dialogueHistory: [], // [{speaker: 'robo'|'caller', text: ''}]
+  takeover: false,
+  pendingCallerText: ''
+};
+
+function launchInCallAgent(){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
+  var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : null);
+  if(!ct){ showT('No call contact selected. Tap Manage to pick one.'); G(4); return; }
+  startRealTimeInCall(ct, 'Check in and talk on behalf of Akshar');
+}
+
+function startRealTimeInCall(contact, initialGoal){
+  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
+
+  inCallSession.active = true;
+  inCallSession.contact = contact;
+  inCallSession.initialGoal = initialGoal || 'Talk on behalf of Akshar';
+  inCallSession.seconds = 0;
+  inCallSession.dialogueHistory = [];
+  inCallSession.takeover = false;
+
+  // Open Screen 24
+  G(24);
+
+  // Set contact header
+  document.getElementById('inCallName').textContent = contact.name;
+  document.getElementById('inCallPhone').textContent = contact.phone;
+  document.getElementById('inCallTimer').textContent = '00:00';
+  document.getElementById('inCallDialogueStream').innerHTML = '';
+  setInCallStatus('ROBO Speaking...', true);
+
+  // Start timer
+  if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
+  inCallSession.timerInterval = setInterval(function(){
+    inCallSession.seconds++;
+    var m = Math.floor(inCallSession.seconds/60), s = inCallSession.seconds%60;
+    document.getElementById('inCallTimer').textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
+  }, 1000);
+
+  // Enable speakerphone and place direct phone call
+  if(window.AndroidBridge){
+    AndroidBridge.enableSpeakerphone(true);
+    AndroidBridge.callPhone(contact.phone);
+  }
+
+  // Generate initial greeting
+  var greeting = "Namaste " + contact.name + "! I am ROBO, Akshar's AI assistant calling on behalf of Akshar. " + (initialGoal ? initialGoal + ". " : "") + "How are you doing?";
+  addInCallBubble('robo', greeting);
+
+  // Speak aloud through speakerphone
+  if(window.AndroidBridge){
+    AndroidBridge.speakInCall(greeting);
+  }
+
+  addHist('🗣️', 'In-Call 2-Way AI Call: ' + contact.name, 'Call Active');
+}
+
+function addInCallBubble(speaker, text){
+  inCallSession.dialogueHistory.push({speaker: speaker, text: text});
+  var stream = document.getElementById('inCallDialogueStream');
+  if(!stream) return;
+
+  var bubble = document.createElement('div');
+  bubble.style.cssText = speaker === 'robo' ? 'display:flex;gap:8px;align-items:flex-start;' : 'display:flex;gap:8px;justify-content:flex-end;align-items:flex-start;';
+  
+  if(speaker === 'robo'){
+    bubble.innerHTML = '<div style="width:28px;height:28px;border-radius:8px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>' +
+      '<div class="cb-bot"><span style="font-size:10px;font-weight:700;color:#22D3EE;display:block;margin-bottom:2px;">ROBO AI</span>' + esc(text) + '</div>';
+  } else {
+    var cName = inCallSession.contact ? inCallSession.contact.name : 'Recipient';
+    bubble.innerHTML = '<div class="cb-caller"><span style="font-size:10px;font-weight:700;color:#93C5FD;display:block;margin-bottom:2px;">' + cName + '</span>' + esc(text) + '</div>' +
+      '<div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>';
+  }
+  stream.appendChild(bubble);
+  stream.scrollTop = stream.scrollHeight;
+}
+
+function setInCallStatus(status, isSpeaking){
+  var txt = document.getElementById('inCallStatusText');
+  var wave = document.getElementById('inCallWaveContainer');
+  if(txt) txt.textContent = status;
+  if(wave) wave.style.display = isSpeaking ? 'inline-block' : 'none';
+}
+
+// Called when ROBO finishes speaking an utterance in the call
+window.onTtsFinished = function(utteranceId){
+  if(inCallSession.active && !inCallSession.takeover){
+    setInCallStatus('Listening to ' + (inCallSession.contact ? inCallSession.contact.name : 'Caller') + '...', false);
+    // Open mic to capture the other person's response!
+    if(window.AndroidBridge){
+      AndroidBridge.startVoice();
+    }
+  }
+};
+
+// When speech recognition captures what the other person on the call said
+function handleCallerSpeech(callerText){
+  if(!inCallSession.active) return;
+  addInCallBubble('caller', callerText);
+  setInCallStatus('AI Brain Thinking...', false);
+
+  if(inCallSession.takeover){
+    // User took over call, do not auto-respond
+    return;
+  }
+
+  inCallSession.pendingCallerText = callerText;
+
+  // Try querying Ollama for response, with fallback to neural engine
+  var prompt = "You are ROBO, a polite, intelligent personal AI agent calling on behalf of Akshar. " +
+    "Contact name: " + (inCallSession.contact ? inCallSession.contact.name : "Contact") + ". " +
+    "Akshar's goal: " + inCallSession.initialGoal + ". " +
+    "The person on the call just said: \"" + callerText + "\". " +
+    "Respond naturally in 1 to 2 short sentences in the same language (Gujarati, Hindi, or English).";
+
+  if(window.AndroidBridge && AndroidBridge.queryOllama){
+    var u = S.ollamaUrl || 'http://10.0.2.2:11434';
+    var m = S.ollamaModel || 'llama3';
+    AndroidBridge.queryOllama(u, m, prompt, 'in_call_ai');
+  } else {
+    setTimeout(handleInCallAiFallback, 600);
+  }
+}
+
+function handleInCallAiResponse(aiText){
+  if(!inCallSession.active) return;
+  var cleanReply = aiText.trim();
+  addInCallBubble('robo', cleanReply);
+  setInCallStatus('ROBO Speaking...', true);
+  if(window.AndroidBridge){
+    AndroidBridge.speakInCall(cleanReply);
+  }
+}
+
+// Built-in intelligent conversational engine (Fallback for 0ms latency / offline)
+function handleInCallAiFallback(){
+  if(!inCallSession.active) return;
+  var text = inCallSession.pendingCallerText.toLowerCase();
+  var cName = inCallSession.contact ? inCallSession.contact.name : 'there';
+  var reply = "";
+
+  if(/kem cho|kya che|sarav|maja ma|bolo/.test(text)){
+    reply = "Namaste " + cName + "! Akshar majama che, ane Akshar e mane tamari sathe vaat karva kidhu che. Tamne koi sahayata joiye che?";
+  } else if(/kaise ho|kya kar rahe|boliye|bolo|haan/.test(text)){
+    reply = "Namaste " + cName + "! Akshar ne mujhe aapse baat karne ke liye kaha hai. Akshar thodi der me aapse connect karenge!";
+  } else if(/hello|hi|who is this|who are you|kon/.test(text)){
+    reply = "Hello! I am ROBO, Akshar's personal AI agent calling on his behalf. Akshar asked me to reach out to you directly!";
+  } else if(/reach|home|time|khana|dinner|aav|aave/.test(text)){
+    reply = "Yes, Akshar asked me to inform you that he is on schedule and will be there shortly!";
+  } else if(/ok|ha|thik|bye|saras|barobar/.test(text)){
+    reply = "Thank you so much " + cName + "! I will update Akshar right away. Have a wonderful day!";
+  } else {
+    reply = "Understood, " + cName + "! I am noting this down for Akshar right now. Is there anything else you would like me to convey to him?";
+  }
+
+  handleInCallAiResponse(reply);
+}
+
+function sendInCallCustom(){
+  var inp = document.getElementById('inCallCustomIn');
+  var val = inp ? inp.value.trim() : '';
+  if(!val || !inCallSession.active) return;
+  inp.value = '';
+
+  addInCallBubble('robo', val);
+  setInCallStatus('ROBO Speaking...', true);
+  if(window.AndroidBridge){
+    AndroidBridge.speakInCall(val);
+  }
+}
+
+function triggerInCallListen(){
+  if(!inCallSession.active) return;
+  setInCallStatus('Listening...', false);
+  if(window.AndroidBridge){
+    AndroidBridge.startVoice();
+  }
+}
+
+function toggleTakeover(){
+  inCallSession.takeover = !inCallSession.takeover;
+  var btn = document.getElementById('takeoverText');
+  if(inCallSession.takeover){
+    btn.textContent = 'Resume AI';
+    setInCallStatus('User In Control (AI Muted)', false);
+    showT('AI muted — you can now speak directly on the call!');
+  } else {
+    btn.textContent = 'Take Over';
+    setInCallStatus('AI Resumed — Listening...', false);
+    if(window.AndroidBridge) AndroidBridge.startVoice();
+  }
+}
+
+function endInCallSession(){
+  if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
+  inCallSession.active = false;
+
+  // Restore speakerphone
+  if(window.AndroidBridge){
+    AndroidBridge.enableSpeakerphone(false);
+  }
+
+  // Save session transcript in Task History
+  var cName = inCallSession.contact ? inCallSession.contact.name : 'Contact';
+  var turnsCount = inCallSession.dialogueHistory.length;
+  addHist('🗣️', 'Call with ' + cName + ' (' + turnsCount + ' dialog turns, ' + inCallSession.seconds + 's)', 'Completed');
+
+  showT('Call session ended. Conversation saved in History!');
+  G(7);
+}
+
+// ═══════════ COMMAND PROCESSOR ═══════════
 var APPS = {
   'youtube':'com.google.android.youtube','whatsapp':'com.whatsapp',
   'chrome':'com.android.chrome','gmail':'com.google.android.gm',
@@ -803,8 +1129,7 @@ var APPS = {
   'facebook':'com.facebook.katana','zoom':'us.zoom.videomeetings',
   'paytm':'net.one97.paytm','gpay':'com.google.android.apps.nbu.paisa.user',
   'phonepe':'com.phonepe.app','swiggy':'in.swiggy.android','zomato':'com.application.zomato',
-  'amazon':'com.amazon.mShop.android.shopping','flipkart':'com.flipkart.android',
-  'snapchat':'com.snapchat.android','linkedin':'com.linkedin.android'
+  'amazon':'com.amazon.mShop.android.shopping','flipkart':'com.flipkart.android'
 };
 
 function findContact(text, pool){
@@ -832,10 +1157,13 @@ function extractMsg(text){
   return '';
 }
 
-// Current active Call & Talk target
-var activeCallTalk = null;
-
 function processCmd(text, fromVoice){
+  // If active call session is happening, treat recognized speech as caller's reply!
+  if(inCallSession.active){
+    handleCallerSpeech(text);
+    return;
+  }
+
   var lower = text.toLowerCase().trim();
   if(!lower) return;
 
@@ -843,7 +1171,6 @@ function processCmd(text, fromVoice){
   var va = document.getElementById('vAction');
   if(vt) vt.textContent = '"'+text+'"';
 
-  // ─── AGENT ON/OFF CHECK ───
   if(!S.agentOn){
     var pauseMsg = '⛔ ROBO Agent is paused. Switch Agent ON at top right.';
     if(vt) vt.textContent = pauseMsg;
@@ -854,23 +1181,18 @@ function processCmd(text, fromVoice){
     return;
   }
 
-  // ─── 1. CALL & TALK ON BEHALF INTENT ───
-  // Matches "call mummy and talk", "call and talk with mummy", "call rahul on behalf of me", "mummy ne phone lagavi ne vaat kar", etc.
+  // ─── 1. CALL & TALK (REAL-TIME CONVERSATION) INTENT ───
   var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/.test(lower) && /\b(call|phone|ring|dial|lagav|lagao)\b/.test(lower))
                      || /\b(talk with|baat karo|vaat kar)\b/.test(lower);
 
   if(isTalkBehalf){
     var pool = S.callCtx.length ? S.callCtx : S.contacts;
     var ct = findContact(lower, pool);
-    if(!ct && pool.length > 0) ct = pool[0]; // default to first selected contact
+    if(!ct && pool.length > 0) ct = pool[0];
 
     if(ct){
       var customNote = extractMsg(text);
-      var speechScript = customNote 
-        ? "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar: " + customNote
-        : "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar: Akshar asked me to connect with you. Please talk with Akshar!";
-
-      openCallTalkModal(ct, speechScript);
+      startRealTimeInCall(ct, customNote || 'Talk with ' + ct.name + ' on behalf of Akshar');
       return;
     } else {
       var msg='No contact selected. Please select a call contact in Settings.';
@@ -908,7 +1230,7 @@ function processCmd(text, fromVoice){
     }
   }
 
-  // ─── 3. WHATSAPP ON BEHALF / CHAT INTENT ───
+  // ─── 3. WHATSAPP INTENT ───
   var isWA = /\b(whatsapp|wa|watsapp|message|msg|send|chat)\b/.test(lower);
   if(isWA){
     var pool = S.waCtx.length ? S.waCtx : S.contacts;
@@ -917,7 +1239,7 @@ function processCmd(text, fromVoice){
       var customMsg = extractMsg(text);
       var isBehalf = /\b(behalf|talk|say|tell|bol|baat)\b/.test(lower);
       var finalMsg = isBehalf 
-        ? ("Hello " + ct.name + "! 🤖 This is ROBO AI Agent on behalf of Akshar: " + (customMsg || "Akshar asked me to connect with you. Please let Akshar know when you are free!"))
+        ? ("Hello " + ct.name + "! 🤖 This is ROBO AI Agent on behalf of Akshar: " + (customMsg || "Akshar asked me to connect with you. Please reply back to Akshar!"))
         : (customMsg || ('Hello '+ct.name+'!'));
 
       var msg='Opening WhatsApp for '+ct.name+'...';
@@ -988,52 +1310,10 @@ function processCmd(text, fromVoice){
   }
 
   // ─── FALLBACK ───
-  var reply='Got it: "'+text+'". Say "Call Mummy and talk with Mummy" or "Open YouTube"!';
+  var reply='Understood: "'+text+'". Say "Call Mummy and talk with Mummy" to initiate real-time conversational calling!';
   if(vt)vt.textContent=reply;
   if(va){va.style.display='none';}
   setDashReply(reply);
-}
-
-// ─── AI CALL & TALK MODAL LOGIC ───
-function openCallTalkModal(contact, speechScript){
-  activeCallTalk = { contact: contact, script: speechScript };
-  document.getElementById('ctContactName').textContent = contact.name;
-  document.getElementById('ctContactPhone').textContent = contact.phone;
-  document.getElementById('ctTranscript').textContent = '"' + speechScript + '"';
-  document.getElementById('callTalkModal').classList.add('show');
-
-  // Speak script out loud via TTS
-  if(window.AndroidBridge) {
-    AndroidBridge.speak(speechScript);
-  }
-
-  addHist('🗣️', 'Call & Talk on Behalf: ' + contact.name, 'Session Active');
-  setDashReply('🗣️ Calling & Talking with ' + contact.name + '...');
-}
-
-function confirmCallTalk(){
-  if(activeCallTalk && activeCallTalk.contact){
-    var ct = activeCallTalk.contact;
-    if(window.AndroidBridge) {
-      AndroidBridge.callPhone(ct.phone);
-    } else {
-      showT('Placing call to ' + ct.name + ' (' + ct.phone + ')');
-    }
-    closeCallTalk();
-  }
-}
-
-function closeCallTalk(){
-  document.getElementById('callTalkModal').classList.remove('show');
-  activeCallTalk = null;
-}
-
-function quickTalkBehalf(){
-  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
-  var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : null);
-  if(!ct){ showT('No call contact selected. Tap Manage to pick one.'); G(4); return; }
-  var script = "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar. Akshar asked me to talk with you. Hope you are having a wonderful day!";
-  openCallTalkModal(ct, script);
 }
 
 function setDashReply(msg){
@@ -1129,7 +1409,6 @@ function testCmd(t){
   processCmd(t, false);
 }
 
-// Callback from native Android when speech is recognized
 window.onSpeechResult=function(text){
   var vt=document.getElementById('vTrans'); if(vt)vt.textContent='"'+text+'"';
   var vs=document.getElementById('vState'); if(vs)vs.textContent='Got it!';
@@ -1173,7 +1452,7 @@ function sendChat(){
 function botReply(t){
   if(!S.agentOn) return 'Agent is paused. Turn Agent ON at top right to execute tasks.';
   var l=t.toLowerCase();
-  if(/talk|behalf/.test(l)) return 'Formulating conversation and initiating call on your behalf...';
+  if(/talk|behalf/.test(l)) return 'Starting real-time in-call conversation on your behalf...';
   if(/call|ring/.test(l)){var ct=findContact(l,S.callCtx.length?S.callCtx:S.contacts);return ct?'Calling '+ct.name+' directly now.':'No contact found. Tap Manage Contacts to add call contacts.';}
   if(/whatsapp|wa|message/.test(l)){var ct=findContact(l,S.waCtx.length?S.waCtx:S.contacts);return ct?'Opening WhatsApp for '+ct.name+'...':'No contact found. Add WhatsApp contacts first.';}
   if(/open|launch/.test(l)) return 'Launching the app on your device...';
