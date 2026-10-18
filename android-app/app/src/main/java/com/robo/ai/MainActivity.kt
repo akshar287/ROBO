@@ -136,6 +136,17 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     assetLoader.shouldInterceptRequest(request.url)
                 }
             }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                scope.launch(Dispatchers.IO) {
+                    val json = loadDeviceContacts()
+                    withContext(Dispatchers.Main) {
+                        val escaped = json.replace("\\", "\\\\").replace("'", "\\'")
+                        webView.evaluateJavascript("if (window.onContactsLoaded) window.onContactsLoaded('$escaped');", null)
+                    }
+                }
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {

@@ -719,14 +719,19 @@ function useDemoContacts(silent){
 }
 function processContacts(list, silent){
   if(!list || !list.length) return;
+  // If incoming list has real contacts, wipe any demo contacts
+  var isRealList = list.some(function(c){ return !isDemoNumber(c.phone); });
+  if(isRealList){
+    list = list.filter(function(c){ return !isDemoNumber(c.phone); });
+  }
   S.contacts = list.map(function(c,i){
     var ini=((c.name||'User').trim()).split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
     return {name:c.name, phone:c.phone, ini:ini, color:COLORS[i%COLORS.length]};
   });
-  if(!S.callCtx || S.callCtx.length === 0){
+  if(!S.callCtx || S.callCtx.length === 0 || S.callCtx.some(function(c){ return isDemoNumber(c.phone); })){
     S.callCtx = S.contacts.slice(0, 5);
   }
-  if(!S.waCtx || S.waCtx.length === 0){
+  if(!S.waCtx || S.waCtx.length === 0 || S.waCtx.some(function(c){ return isDemoNumber(c.phone); })){
     S.waCtx = S.contacts.slice(0, 5);
   }
   save();
@@ -1020,17 +1025,23 @@ var inCallSession = {
   pendingCallerText: ''
 };
 
+function isDemoNumber(num){
+  if(!num) return true;
+  var digits = String(num).replace(/[^0-9]/g, '');
+  return digits.indexOf('987650000') !== -1 || digits.length < 7;
+}
+
 function extractCallTarget(text){
   var lower = text.toLowerCase();
   // 1. Check in S.callCtx or S.contacts
   var pool = (S.callCtx && S.callCtx.length) ? S.callCtx : (S.contacts || []);
   for(var i=0; i<pool.length; i++){
-    if(lower.indexOf(pool[i].name.toLowerCase()) !== -1){
+    if(pool[i].name && lower.indexOf(pool[i].name.toLowerCase()) !== -1){
       return pool[i].name;
     }
   }
   for(var i=0; i<S.contacts.length; i++){
-    if(lower.indexOf(S.contacts[i].name.toLowerCase()) !== -1){
+    if(S.contacts[i].name && lower.indexOf(S.contacts[i].name.toLowerCase()) !== -1){
       return S.contacts[i].name;
     }
   }
@@ -1039,7 +1050,7 @@ function extractCallTarget(text){
   var m = text.match(/(?:call|dial|phone|ring|talk with|talk to)\s+([a-zA-Z0-9\u0A80-\u0AFF\u0900-\u097F]+)/i);
   if(m && m[1]){
     var w = m[1].trim();
-    var stopWords = ['and','to','the','my','a','an','with','her','him','them','on','behalf','of','phone','call','me'];
+    var stopWords = ['and','to','the','my','a','an','with','her','him','them','on','behalf','of','phone','call','me','karo','kar','che','ne','sathe'];
     if(stopWords.indexOf(w.toLowerCase()) === -1){
       return w.charAt(0).toUpperCase() + w.slice(1);
     }
@@ -1049,8 +1060,13 @@ function extractCallTarget(text){
   var numMatch = text.match(/(\+?[0-9]{7,15})/);
   if(numMatch) return numMatch[1];
 
-  // 4. Fallback to first contact or default
-  if(pool.length > 0) return pool[0].name;
+  // 4. Fallback: If S.callCtx has selected calling contact, use it!
+  if(S.callCtx && S.callCtx.length > 0 && !isDemoNumber(S.callCtx[0].phone)){
+    return S.callCtx[0].name;
+  }
+  if(S.contacts && S.contacts.length > 0 && !isDemoNumber(S.contacts[0].phone)){
+    return S.contacts[0].name;
+  }
   return 'Mummy';
 }
 
@@ -1109,16 +1125,31 @@ function startRealTimeInCall(contact, initialGoal){
   if(!contact) contact = { name: 'Mummy', phone: '' };
   if(typeof contact === 'string') contact = { name: contact, phone: '' };
 
-  // Resolve phone number if not present
-  if(!contact.phone && window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
-    contact.phone = AndroidBridge.getPhoneNumber(contact.name);
+  // Filter out any dummy demo numbers
+  if(isDemoNumber(contact.phone)){
+    contact.phone = '';
   }
+
+  // Resolve REAL phone number from Android device contacts
+  if(!contact.phone && window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
+    try {
+      var bridgeNum = AndroidBridge.getPhoneNumber(contact.name);
+      if(bridgeNum && !isDemoNumber(bridgeNum)){
+        contact.phone = bridgeNum;
+      }
+    } catch(e){}
+  }
+
+  // Also check selected calling contacts or loaded contacts
   if(!contact.phone){
-    var pool = (S.contacts || []).concat(S.callCtx || []);
+    var pool = (S.callCtx || []).concat(S.contacts || []);
     for(var i=0; i<pool.length; i++){
       if(pool[i].name.toLowerCase().indexOf(contact.name.toLowerCase()) !== -1 ||
          contact.name.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
-        if(pool[i].phone){ contact.phone = pool[i].phone; break; }
+        if(pool[i].phone && !isDemoNumber(pool[i].phone)){
+          contact.phone = pool[i].phone;
+          break;
+        }
       }
     }
   }
@@ -1137,7 +1168,7 @@ function startRealTimeInCall(contact, initialGoal){
 
   // Set contact header on Screen 24
   document.getElementById('inCallName').textContent = contact.name;
-  document.getElementById('inCallPhone').textContent = contact.phone || 'Cellular Call';
+  document.getElementById('inCallPhone').textContent = contact.phone || 'Direct Cellular Call';
   document.getElementById('inCallTimer').textContent = '00:00';
   document.getElementById('inCallDialogueStream').innerHTML = '';
 
@@ -1145,8 +1176,8 @@ function startRealTimeInCall(contact, initialGoal){
   var waitBanner = document.getElementById('inCallWaitBanner');
   var waitText = document.getElementById('inCallWaitText');
   if(waitBanner) waitBanner.style.display = 'flex';
-  if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + '... Waiting for answer (8s)';
-  setInCallStatus('Ringing... Waiting for answer', false);
+  if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + (contact.phone ? ' (' + contact.phone + ')' : '') + '... Waiting for answer (8s)';
+  setInCallStatus('Calling ' + contact.name + '... Waiting for answer', false);
 
   // Start call duration timer
   if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
@@ -1171,13 +1202,13 @@ function startRealTimeInCall(contact, initialGoal){
     }
   }, 1000);
 
-  // Enable speakerphone and dial the call WITHOUT speaking over the ringtone
+  // Enable speakerphone and trigger ACTUAL cellular phone call
   if(window.AndroidBridge){
     AndroidBridge.enableSpeakerphone(true);
-    if(contact.phone){
+    if(contact.phone && !isDemoNumber(contact.phone)){
       AndroidBridge.callPhone(contact.phone);
     } else {
-      AndroidBridge.callOrDial(contact.name, ''); // empty speechScript ensures NO premature speech from Android
+      AndroidBridge.callOrDial(contact.name, ''); // dials actual contact directly in Kotlin
     }
   }
 
@@ -1545,19 +1576,25 @@ function processCmd(text, fromVoice){
     var target = extractCallTarget(text);
     var customNote = extractMsg(text);
 
-    var foundContact = null;
-    var pool = (S.contacts || []).concat(S.callCtx || []);
-    for(var i=0; i<pool.length; i++){
-      if(pool[i].name.toLowerCase() === target.toLowerCase() ||
-         pool[i].name.toLowerCase().indexOf(target.toLowerCase()) !== -1 ||
-         target.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
-        foundContact = pool[i];
-        break;
-      }
+    var phone = '';
+    if(window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
+      try {
+        var bridgeNum = AndroidBridge.getPhoneNumber(target);
+        if(bridgeNum && !isDemoNumber(bridgeNum)) phone = bridgeNum;
+      } catch(e){}
     }
-    var phone = foundContact ? (foundContact.phone || '') : '';
-    if(!phone && window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
-      phone = AndroidBridge.getPhoneNumber(target);
+    if(!phone || isDemoNumber(phone)){
+      var pool = (S.callCtx || []).concat(S.contacts || []);
+      for(var i=0; i<pool.length; i++){
+        if(pool[i].name.toLowerCase() === target.toLowerCase() ||
+           pool[i].name.toLowerCase().indexOf(target.toLowerCase()) !== -1 ||
+           target.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
+          if(pool[i].phone && !isDemoNumber(pool[i].phone)){
+            phone = pool[i].phone;
+            break;
+          }
+        }
+      }
     }
     var ct = { name: target, phone: phone };
 

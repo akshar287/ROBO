@@ -1,11 +1,16 @@
 package com.robo.ai
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.net.URLEncoder
 
 object ActionExecutor {
@@ -161,28 +166,56 @@ object ActionExecutor {
      */
     fun callPhoneDirect(context: Context, phoneNumber: String): Boolean {
         return try {
-            val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
-            val formattedPhone = when {
-                cleanPhone.length == 10 -> "+91$cleanPhone"
-                cleanPhone.startsWith("0") -> "+91" + cleanPhone.substring(1)
-                else -> if (cleanPhone.startsWith("+")) cleanPhone else "+$cleanPhone"
+            val cleanDigits = phoneNumber.filter { it.isDigit() || it == '+' }
+            if (cleanDigits.length < 7) {
+                Log.e(TAG, "callPhoneDirect: Invalid phone number: '$phoneNumber'")
+                dialPhone(context, phoneNumber)
+                return false
             }
+
+            // Guard against calling fake demo dummy numbers
+            if (cleanDigits.contains("987650000")) {
+                Log.e(TAG, "callPhoneDirect: Dummy number detected ($cleanDigits), opening dialpad instead")
+                dialPhone(context, "")
+                return false
+            }
+
+            val formattedPhone = when {
+                cleanDigits.length == 10 -> "+91$cleanDigits"
+                cleanDigits.startsWith("0") -> "+91" + cleanDigits.substring(1)
+                cleanDigits.startsWith("+") -> cleanDigits
+                else -> "+$cleanDigits"
+            }
+
+            // Check CALL_PHONE permission
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "CALL_PHONE permission not granted at runtime! Requesting on Activity...")
+                if (context is Activity) {
+                    ActivityCompat.requestPermissions(context, arrayOf(Manifest.permission.CALL_PHONE), 102)
+                }
+                dialPhone(context, formattedPhone)
+                return false
+            }
+
+            Log.d(TAG, "Placing ACTUAL direct cellular call to: $formattedPhone")
             val callIntent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$formattedPhone"))
             callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(callIntent)
             true
         } catch (e: SecurityException) {
-            Log.e(TAG, "CALL_PHONE permission not granted — falling back to dialer")
+            Log.e(TAG, "CALL_PHONE permission denied by system: ${e.message} — falling back to dialer")
             dialPhone(context, phoneNumber)
+            false
         } catch (e: Exception) {
-            Log.e(TAG, "Error calling phone: ${e.message}")
+            Log.e(TAG, "Error placing direct call: ${e.message}")
             dialPhone(context, phoneNumber)
+            false
         }
     }
 
     /**
      * Looks up contact in device phonebook by name or dials number directly.
-     * Always opens the dialpad if not found so user can dial manually.
+     * Always initiates actual direct cellular call when found.
      */
     fun callOrDialContact(context: Context, target: String): String {
         return try {
@@ -190,76 +223,29 @@ object ActionExecutor {
             val digitsOnly = trimmed.filter { it.isDigit() || it == '+' }
 
             // 1. If input is already a phone number (e.g. 9876543210)
-            if (digitsOnly.length >= 7) {
+            if (digitsOnly.length >= 7 && !digitsOnly.contains("987650000")) {
                 callPhoneDirect(context, digitsOnly)
                 return digitsOnly
             }
 
-            // 2. If target is empty or asking for dialpad/dialer
-            if (trimmed.isEmpty() || trimmed.lowercase() in listOf("dialer", "dialpad", "phone", "keypad")) {
+            // 2. If target explicitly asks for dialpad/dialer
+            if (trimmed.lowercase() in listOf("dialer", "dialpad", "phone", "keypad")) {
                 dialPhone(context, "")
                 return ""
             }
 
-            // 3. Search by contact name in Android device contacts
-            var foundNumber: String? = null
-            var matchedName: String? = null
-            val cursor = context.contentResolver.query(
-                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                arrayOf(
-                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
-                ),
-                "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
-                arrayOf("%$trimmed%"),
-                null
-            )
-            cursor?.use { c ->
-                val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
-                if (c.moveToFirst()) {
-                    matchedName = c.getString(nameIdx)
-                    foundNumber = c.getString(numIdx)
-                }
+            // 3. Search real device contacts
+            val foundNumber = getPhoneNumber(context, target)
+            if (foundNumber.isNotBlank() && !foundNumber.contains("987650000")) {
+                Log.d(TAG, "Found contact $target ($foundNumber), dialing actual call directly")
+                callPhoneDirect(context, foundNumber)
+                return foundNumber
             }
 
-            // 4. If not found and input contains spaces, search using the primary contact word
-            if (foundNumber.isNullOrBlank() && trimmed.contains(" ")) {
-                val words = trimmed.split(" ")
-                val cleanWord = words.firstOrNull { 
-                    it.length >= 3 && it.lowercase() !in listOf("call", "dial", "talk", "with", "phone", "and", "the", "her", "him", "tell") 
-                }
-                if (!cleanWord.isNullOrBlank()) {
-                    val subCursor = context.contentResolver.query(
-                        android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        arrayOf(
-                            android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                            android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
-                        ),
-                        "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
-                        arrayOf("%$cleanWord%"),
-                        null
-                    )
-                    subCursor?.use { c ->
-                        val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                        val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
-                        if (c.moveToFirst()) {
-                            matchedName = c.getString(nameIdx)
-                            foundNumber = c.getString(numIdx)
-                        }
-                    }
-                }
-            }
-
-            if (!foundNumber.isNullOrBlank()) {
-                Log.d(TAG, "Found contact $matchedName ($foundNumber), dialing directly")
-                callPhoneDirect(context, foundNumber!!)
-                foundNumber!!
-            } else {
-                Log.d(TAG, "Contact '$trimmed' not found in device contacts, opening dialpad")
-                dialPhone(context, "")
-                ""
-            }
+            // 4. Contact not found, open dialpad as last resort
+            Log.d(TAG, "Contact '$trimmed' not found in device contacts, opening dialpad")
+            dialPhone(context, "")
+            ""
         } catch (e: Exception) {
             Log.e(TAG, "Error in callOrDialContact: ${e.message}")
             dialPhone(context, "")
@@ -268,30 +254,97 @@ object ActionExecutor {
     }
 
     /**
-     * Looks up phone number for given contact name or digits.
+     * Looks up real phone number from Android ContactsContract.
+     * Handles relations aliases (Mummy/Mom/Maa, Papa/Dad), case-insensitivity, and fallback.
      */
     fun getPhoneNumber(context: Context, target: String): String {
         return try {
             val trimmed = target.trim()
             val digitsOnly = trimmed.filter { it.isDigit() || it == '+' }
-            if (digitsOnly.length >= 7) return digitsOnly
+            if (digitsOnly.length >= 7 && !digitsOnly.contains("987650000")) return digitsOnly
+
+            val lower = trimmed.lowercase()
+            val searchTerms = when {
+                lower in listOf("mummy", "mom", "mother", "maa", "mataji", "ba", "ammi") ->
+                    listOf("mummy", "mom", "mother", "maa", "mataji", "ba", "ammi")
+                lower in listOf("papa", "dad", "father", "bapuji", "pita", "abbu", "pappa") ->
+                    listOf("papa", "dad", "father", "bapuji", "pita", "abbu", "pappa")
+                lower in listOf("bhai", "brother", "bro") ->
+                    listOf("bhai", "brother", "bro")
+                lower in listOf("ben", "sister", "sis") ->
+                    listOf("ben", "sister", "sis")
+                else -> listOf(lower)
+            }
 
             var foundNumber: String? = null
+
             val cursor = context.contentResolver.query(
                 android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
-                "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
-                arrayOf("%$trimmed%"),
+                arrayOf(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+                ),
+                null, null,
                 null
             )
+
             cursor?.use { c ->
+                val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                 val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
-                if (c.moveToFirst()) {
-                    foundNumber = c.getString(numIdx)
+
+                // 1. Pass: Match aliases or exact substring
+                while (c.moveToNext()) {
+                    val name = c.getString(nameIdx)?.lowercase() ?: ""
+                    val num = c.getString(numIdx) ?: ""
+                    val clean = num.filter { it.isDigit() }
+                    if (clean.length >= 7 && !clean.contains("987650000")) {
+                        for (term in searchTerms) {
+                            if (name.contains(term)) {
+                                foundNumber = num
+                                break
+                            }
+                        }
+                    }
+                    if (foundNumber != null) break
+                }
+
+                // 2. Pass: Multi-word query (e.g. "call mummy and talk")
+                if (foundNumber == null && trimmed.contains(" ")) {
+                    val words = trimmed.lowercase().split("\\s+".toRegex()).filter {
+                        it.length >= 3 && it !in listOf("call", "dial", "talk", "with", "phone", "and", "the", "her", "him", "tell")
+                    }
+                    c.moveToPosition(-1)
+                    while (c.moveToNext()) {
+                        val name = c.getString(nameIdx)?.lowercase() ?: ""
+                        val num = c.getString(numIdx) ?: ""
+                        val clean = num.filter { it.isDigit() }
+                        if (clean.length >= 7 && !clean.contains("987650000")) {
+                            for (w in words) {
+                                if (name.contains(w)) {
+                                    foundNumber = num
+                                    break
+                                }
+                            }
+                        }
+                        if (foundNumber != null) break
+                    }
+                }
+
+                // 3. Pass: Generic fallback (e.g. user just said "call and talk")
+                if (foundNumber == null && (trimmed.isEmpty() || lower in listOf("call", "dial", "talk", "someone", "contact"))) {
+                    c.moveToPosition(-1)
+                    if (c.moveToFirst()) {
+                        val num = c.getString(numIdx) ?: ""
+                        if (num.filter { it.isDigit() }.length >= 7 && !num.contains("987650000")) {
+                            foundNumber = num
+                        }
+                    }
                 }
             }
+
             foundNumber ?: ""
         } catch (e: Exception) {
+            Log.e(TAG, "Error looking up phone number for '$target': ${e.message}")
             ""
         }
     }
