@@ -110,8 +110,7 @@ object ActionExecutor {
     }
 
     /**
-     * Dials phone number using Android native dialer with recipient validation.
-     * Non-technical users do not need telecom API keys!
+     * Dials phone number using Android native dialer (user taps Call to confirm).
      */
     fun dialPhone(context: Context, phoneNumber: String): Boolean {
         return try {
@@ -123,6 +122,32 @@ object ActionExecutor {
         } catch (e: Exception) {
             Log.e(TAG, "Error dialing phone: ${e.message}")
             false
+        }
+    }
+
+    /**
+     * Places a DIRECT phone call immediately (requires CALL_PHONE runtime permission).
+     * No dialer shown — rings instantly like Google Assistant.
+     */
+    fun callPhoneDirect(context: Context, phoneNumber: String): Boolean {
+        return try {
+            val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
+            // Ensure country code
+            val formattedPhone = when {
+                cleanPhone.length == 10 -> "+91$cleanPhone"
+                cleanPhone.startsWith("0") -> "+91" + cleanPhone.substring(1)
+                else -> if (cleanPhone.startsWith("+")) cleanPhone else "+$cleanPhone"
+            }
+            val callIntent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$formattedPhone"))
+            callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(callIntent)
+            true
+        } catch (e: SecurityException) {
+            Log.e(TAG, "CALL_PHONE permission not granted — falling back to dialer")
+            dialPhone(context, phoneNumber)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calling phone: ${e.message}")
+            dialPhone(context, phoneNumber)
         }
     }
 

@@ -58,7 +58,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun configureWebView() {
-        // Initialize modern WebViewAssetLoader mapped to root www directory
         assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
@@ -79,6 +78,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         webView.addJavascriptInterface(AndroidBridge(), "AndroidBridge")
 
+        val corsHeaders = mapOf(
+            "Access-Control-Allow-Origin" to "*",
+            "Cache-Control" to "no-cache"
+        )
+
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(
                 view: WebView,
@@ -88,24 +92,31 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 val cleanPath = path.trimStart('/')
                 val assetPath = if (cleanPath.isEmpty()) "www/index.html" else "www/$cleanPath"
 
-                try {
-                    val stream = assets.open(assetPath)
-                    val mime = when {
-                        cleanPath.endsWith(".html") || cleanPath.isEmpty() -> "text/html"
-                        cleanPath.endsWith(".css") -> "text/css"
-                        cleanPath.endsWith(".js") -> "application/javascript"
-                        cleanPath.endsWith(".json") -> "application/json"
-                        cleanPath.endsWith(".svg") -> "image/svg+xml"
-                        cleanPath.endsWith(".png") -> "image/png"
-                        else -> "application/octet-stream"
-                    }
-                    val headers = mapOf(
-                        "Access-Control-Allow-Origin" to "*",
-                        "Cache-Control" to "no-cache"
+                fun mimeFor(p: String) = when {
+                    p.endsWith(".html") || p.isEmpty() -> "text/html"
+                    p.endsWith(".css")  -> "text/css"
+                    p.endsWith(".js")   -> "application/javascript"
+                    p.endsWith(".json") -> "application/json"
+                    p.endsWith(".svg")  -> "image/svg+xml"
+                    p.endsWith(".png")  -> "image/png"
+                    else                -> "application/octet-stream"
+                }
+
+                // 1️⃣ OTA: check internal storage first (downloaded update)
+                val localFile = java.io.File(filesDir, assetPath)
+                if (localFile.exists()) {
+                    return WebResourceResponse(
+                        mimeFor(cleanPath), "UTF-8", 200, "OK",
+                        corsHeaders, localFile.inputStream()
                     )
-                    return WebResourceResponse(mime, "UTF-8", 200, "OK", headers, stream)
+                }
+
+                // 2️⃣ Fall back to bundled assets
+                return try {
+                    val stream = assets.open(assetPath)
+                    WebResourceResponse(mimeFor(cleanPath), "UTF-8", 200, "OK", corsHeaders, stream)
                 } catch (e: Exception) {
-                    return assetLoader.shouldInterceptRequest(request.url)
+                    assetLoader.shouldInterceptRequest(request.url)
                 }
             }
         }
@@ -119,13 +130,66 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Load root index.html
         webView.loadUrl("https://appassets.androidplatform.net/index.html")
+
+        // OTA: fetch latest HTML from GitHub in background and cache it
+        fetchOtaUpdate()
     }
+
+    /**
+     * OTA Self-Update: Downloads the latest index.html from GitHub and stores it in
+     * internal storage. On the NEXT app launch it will be served automatically —
+     * no reinstall ever needed!
+     */
+    private fun fetchOtaUpdate() {
+        val OTA_URL = "https://raw.githubusercontent.com/akshar287/ROBO/main/android-app/app/src/main/assets/www/index.html"
+        scope.launch(Dispatchers.IO) {
+            try {
+                val connection = java.net.URL(OTA_URL).openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8000
+                connection.readTimeout = 15000
+                connection.setRequestProperty("Cache-Control", "no-cache")
+                val responseCode = connection.responseCode
+                if (responseCode == 200) {
+                    val content = connection.inputStream.bufferedReader(Charsets.UTF_8).readText()
+                    connection.disconnect()
+                    // Save to internal storage: filesDir/www/index.html
+                    val file = java.io.File(filesDir, "www/index.html")
+                    file.parentFile?.mkdirs()
+                    file.writeText(content, Charsets.UTF_8)
+                    Log.d("ROBO_OTA", "OTA update downloaded (${content.length} bytes). Reloading...")
+                    withContext(Dispatchers.Main) {
+                        webView.reload()
+                        // Notify JS
+                        webView.evaluateJavascript(
+                            "if(window.AndroidBridge) AndroidBridge.showToast('ROBO updated to latest version!');",
+                            null
+                        )
+                    }
+                } else {
+                    connection.disconnect()
+                    Log.d("ROBO_OTA", "No update available (HTTP $responseCode)")
+                }
+            } catch (e: Exception) {
+                Log.d("ROBO_OTA", "OTA check failed (offline?): ${e.message}")
+            }
+        }
+    }
+
 
     inner class AndroidBridge {
         @JavascriptInterface
         fun dialPhone(phoneNumber: String) {
+            // Shows the dialer (user must tap Call button)
             runOnUiThread {
                 ActionExecutor.dialPhone(this@MainActivity, phoneNumber)
+            }
+        }
+
+        @JavascriptInterface
+        fun callPhone(phoneNumber: String) {
+            // DIRECT call — no dialer shown, rings immediately
+            runOnUiThread {
+                ActionExecutor.callPhoneDirect(this@MainActivity, phoneNumber)
             }
         }
 
@@ -295,7 +359,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun requestPermissionsIfNeeded() {
         val permissions = mutableListOf(
             Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.READ_CONTACTS
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.CALL_PHONE
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)

@@ -16,6 +16,9 @@
     <!-- Voice permissions -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Direct calling (ACTION_CALL — skips dialer for voice commands) -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
     <!-- Contacts permission for reading real phone contacts -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 

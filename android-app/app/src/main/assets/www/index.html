@@ -1,1195 +1,1042 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-  <meta name="theme-color" content="#060A14"/>
-  <title>ROBO - Personal AI Agent</title>
-  <style>
-    /* ───── RESET & BASE ───── */
-    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-    body{background:#060A14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow-x:hidden;height:100%;overscroll-behavior:none;}
-    html{height:100%;}
-    button{cursor:pointer;border:none;outline:none;background:none;font-family:inherit;}
-    button:active{transform:scale(0.96);}
-    input,textarea{font-family:inherit;color:#fff;background:transparent;outline:none;border:none;}
-    ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#060A14;} ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px;}
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#060A14"/>
+<title>ROBO - Personal AI Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body,html{height:100%;background:#060A14;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden;}
+button{cursor:pointer;border:none;outline:none;background:none;font-family:inherit;color:inherit;}
+button:active{opacity:.8;}
+input,textarea{font-family:inherit;color:#fff;background:transparent;outline:none;border:none;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#1e293b;border-radius:3px;}
 
-    /* ───── SCREEN SYSTEM ───── */
-    .screen{display:none;width:100%;height:100vh;flex-direction:column;overflow:hidden;position:absolute;top:0;left:0;}
-    .screen.active{display:flex;}
-    #app{position:relative;width:100%;max-width:430px;margin:0 auto;height:100vh;overflow:hidden;background:#060A14;}
+#app{position:relative;width:100%;max-width:430px;margin:0 auto;height:100vh;overflow:hidden;background:#060A14;}
 
-    /* ───── SCROLLABLE BODY ───── */
-    .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+/* SCREENS */
+.screen{display:none;width:100%;height:100vh;flex-direction:column;overflow:hidden;position:absolute;top:0;left:0;background:#060A14;}
+.screen.active{display:flex;}
+.scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 
-    /* ───── TOP BAR ───── */
-    .top-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;flex-shrink:0;}
+/* BOTTOM NAV */
+#bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(6,10,20,.98);border-top:1px solid #1D2B4A;display:none;z-index:200;padding-bottom:env(safe-area-inset-bottom,0px);}
+.bnav{display:flex;justify-content:space-around;padding:6px 0 2px;}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;color:#475569;font-size:10px;background:none;border:none;}
+.bnav-btn.active{color:#22D3EE;}
+.bnav-icon{font-size:21px;line-height:1.1;}
+.bnav-mic{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-16px;box-shadow:0 0 16px rgba(6,182,212,.5);}
 
-    /* ───── BOTTOM NAV ───── */
-    #bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(7,13,27,0.97);border-top:1px solid #1D2B4A;display:none;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
-    .bnav{display:flex;justify-content:space-around;padding:8px 0 4px;}
-    .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:10px;cursor:pointer;transition:all .2s;color:#475569;font-size:10px;background:none;border:none;}
-    .bnav-btn.active{color:#22D3EE;}
-    .bnav-btn .icon{font-size:20px;line-height:1;}
+/* CARDS */
+.card{background:#10192E;border:1px solid #1D2B4A;border-radius:16px;padding:14px;}
+.grad-text{background:linear-gradient(135deg,#22D3EE,#38BDF8,#3B82F6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-    /* ───── CARDS ───── */
-    .card{background:#10192E;border:1px solid #1D2B4A;border-radius:16px;padding:14px;}
+/* BUTTONS */
+.btn-p{width:100%;padding:14px;border-radius:16px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-weight:700;font-size:14px;box-shadow:0 4px 20px rgba(6,182,212,.28);}
+.btn-s{width:100%;padding:12px;border-radius:14px;background:transparent;border:1px solid #1D2B4A;color:#64748B;font-size:13px;}
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;flex-shrink:0;}
+.b-green{background:rgba(16,185,129,.15);color:#34D399;border:1px solid rgba(16,185,129,.3);}
+.b-red{background:rgba(239,68,68,.15);color:#F87171;border:1px solid rgba(239,68,68,.3);}
+.b-blue{background:rgba(6,182,212,.15);color:#22D3EE;border:1px solid rgba(6,182,212,.3);}
+.b-amber{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.3);}
 
-    /* ───── GRADIENT TEXT ───── */
-    .grad-text{background:linear-gradient(135deg,#22D3EE,#38BDF8,#3B82F6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.inp{width:100%;background:#0B1327;border:1px solid #1D2B4A;border-radius:13px;padding:12px 14px;font-size:14px;color:#fff;}
+.inp::placeholder{color:#334155;}
+.inp:focus{border-color:#22D3EE;}
 
-    /* ───── BUTTONS ───── */
-    .btn-primary{width:100%;padding:14px 20px;border-radius:16px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-weight:700;font-size:14px;letter-spacing:.3px;box-shadow:0 4px 20px rgba(6,182,212,.3);}
-    .btn-secondary{width:100%;padding:12px 20px;border-radius:16px;background:transparent;border:1px solid #1D2B4A;color:#94A3B8;font-size:13px;}
-    .btn-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-g{background:#22C55E;box-shadow:0 0 6px #22C55E;}
+.dot-r{background:#EF4444;}
+.dot-a{background:#F59E0B;}
 
-    /* ───── INPUT ───── */
-    .input-field{width:100%;background:#0B1327;border:1px solid #1D2B4A;border-radius:14px;padding:13px 16px;font-size:14px;color:#fff;}
-    .input-field:focus{border-color:#22D3EE;}
-    .input-field::placeholder{color:#475569;}
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.modal.show{display:flex;}
+.modal-box{background:#0B1327;border-top:1px solid #1D2B4A;border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:16px 16px 28px;max-height:88vh;display:flex;flex-direction:column;}
+.mhandle{width:36px;height:4px;background:#1D2B4A;border-radius:4px;margin:0 auto 14px;}
 
-    /* ───── BADGE ───── */
-    .badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;}
-    .badge-green{background:rgba(16,185,129,.15);color:#34D399;border:1px solid rgba(16,185,129,.3);}
-    .badge-red{background:rgba(239,68,68,.15);color:#F87171;border:1px solid rgba(239,68,68,.3);}
-    .badge-blue{background:rgba(6,182,212,.15);color:#22D3EE;border:1px solid rgba(6,182,212,.3);}
+/* CONTACT ITEM */
+.ci{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:13px;cursor:pointer;border:1.5px solid transparent;}
+.ci:active{background:#10192E;}
+.ci.sel{border-color:#22D3EE;background:rgba(6,182,212,.07);}
+.av{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;}
 
-    /* ───── MODAL ───── */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:none;align-items:flex-end;}
-    .modal-overlay.show{display:flex;}
-    .modal-sheet{background:#0B1327;border-top:1px solid #1D2B4A;border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;padding:20px 16px 32px;max-height:85vh;display:flex;flex-direction:column;}
-    .modal-handle{width:40px;height:4px;background:#1D2B4A;border-radius:4px;margin:0 auto 16px;}
+/* APP GRID */
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.app-btn{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.app-btn:active .app-ic{transform:scale(.88);}
+.app-ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #1D2B4A;transition:transform .15s;}
+.app-lbl{font-size:10px;color:#64748B;text-align:center;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-    /* ───── CONTACT ITEM ───── */
-    .contact-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;border:1px solid transparent;cursor:pointer;}
-    .contact-item:active{background:#10192E;}
-    .contact-item.selected{border-color:#22D3EE;background:rgba(6,182,212,.08);}
-    .avatar{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;}
+/* QUICK ACTION */
+.qa{display:flex;align-items:center;gap:10px;padding:13px 12px;border-radius:14px;background:#10192E;border:1px solid #1D2B4A;font-size:13px;color:#CBD5E1;text-align:left;}
+.qa:active{background:#172442;}
 
-    /* ───── ANIMATIONS ───── */
-    @keyframes pulse-ring{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.4),0 0 20px rgba(34,211,238,.25)}50%{box-shadow:0 0 0 12px rgba(34,211,238,0),0 0 30px rgba(34,211,238,.5)}}
-    .mic-pulse{animation:pulse-ring 2s ease-in-out infinite;}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-    .fade-up{animation:fadeUp .4s ease forwards;}
-    @keyframes spin{to{transform:rotate(360deg)}} .spin{animation:spin 1s linear infinite;}
+/* HISTORY ITEM */
+.hi{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #0D1B3A;}
+.hi:last-child{border-bottom:none;}
 
-    /* ───── STATUS DOT ───── */
-    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-    .dot-green{background:#22C55E;box-shadow:0 0 6px #22C55E;}
-    .dot-red{background:#EF4444;}
-    .dot-amber{background:#F59E0B;}
+/* VOICE RING */
+@keyframes vring{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.5),0 0 24px rgba(34,211,238,.3)}50%{box-shadow:0 0 0 14px rgba(34,211,238,0),0 0 36px rgba(34,211,238,.6)}}
+.vring{animation:vring 1.8s ease-in-out infinite;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.fu{animation:fadeUp .35s ease forwards;}
 
-    /* ───── ROBO SVG ───── */
-    .robo-svg{display:block;}
+/* CHAT BUBBLES */
+.cb-user{background:linear-gradient(135deg,#2563EB,#06B6D4);border-radius:16px 16px 4px 16px;padding:11px 13px;max-width:80%;font-size:13px;line-height:1.55;color:#fff;}
+.cb-bot{background:#10192E;border:1px solid #1D2B4A;border-radius:16px 16px 16px 4px;padding:11px 13px;max-width:82%;font-size:13px;line-height:1.55;color:#CBD5E1;}
 
-    /* ───── DASHBOARD SPECIFIC ───── */
-    #screen-7 .scroll-body{padding-bottom:70px;}
-    .dashboard-mic-btn{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto;box-shadow:0 0 30px rgba(6,182,212,.45);}
-    .quick-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .quick-btn{padding:14px 10px;border-radius:14px;background:#10192E;border:1px solid #1D2B4A;display:flex;align-items:center;gap:10px;font-size:13px;color:#CBD5E1;text-align:left;}
-    .quick-btn:active{background:#172442;}
-    .recent-task{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid #1D2B4A;}
-    .recent-task:last-child{border-bottom:none;}
-
-    /* ───── APP LAUNCHER ───── */
-    .app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:4px 0;}
-    .app-icon-btn{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:none;border:none;}
-    .app-icon-btn:active .app-icon-wrap{transform:scale(0.9);}
-    .app-icon-wrap{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #1D2B4A;}
-    .app-icon-label{font-size:10px;color:#94A3B8;text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-    /* ───── SWIPEABLE CARDS ───── */
-    .feature-cards{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;}
-    .feature-cards::-webkit-scrollbar{display:none;}
-    .feature-card{scroll-snap-align:start;flex-shrink:0;width:200px;background:#10192E;border:1px solid #1D2B4A;border-radius:16px;padding:14px;}
-  </style>
+/* SPLASH ANIM */
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
 <div id="app">
 
-<!-- ██ S1: SPLASH ██ -->
-<div id="screen-1" class="screen active" style="background:linear-gradient(160deg,#060a14 0%,#091124 60%,#0d1b3a 100%);justify-content:space-between;padding:20px 24px 32px;">
-  <div style="text-align:right;"><span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.1);color:#22D3EE;border:1px solid rgba(34,211,238,.2);">v2.0</span></div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-    <div style="width:110px;height:110px;position:relative;">
-      <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
-        <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E2F1FF"/><stop offset="100%" stop-color="#5D92D6"/></linearGradient><linearGradient id="sc" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0B1528"/><stop offset="100%" stop-color="#050B17"/></linearGradient><linearGradient id="ey" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#67E8F9"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs>
-        <rect x="14" y="50" width="10" height="24" rx="5" fill="#0284C7"/><rect x="96" y="50" width="10" height="24" rx="5" fill="#0284C7"/>
-        <rect x="22" y="24" width="76" height="68" rx="28" fill="url(#bg)" stroke="#A5C9EB" stroke-width="1.5"/>
-        <rect x="28" y="32" width="64" height="46" rx="18" fill="url(#sc)" stroke="#1E3A5F" stroke-width="1.5"/>
-        <ellipse cx="44" cy="52" rx="9" ry="12" fill="url(#ey)"/><ellipse cx="76" cy="52" rx="9" ry="12" fill="url(#ey)"/>
-        <circle cx="47" cy="48" r="3.5" fill="#fff"/><circle cx="79" cy="48" r="3.5" fill="#fff"/>
-        <path d="M53 66 Q60 70 67 66" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
-        <path d="M60 24 V12" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="10" r="5" fill="#00D2FF"/><circle cx="60" cy="10" r="2" fill="#fff"/>
-        <rect x="42" y="93" width="36" height="8" rx="4" fill="#0284C7"/><circle cx="60" cy="97" r="2" fill="#38BDF8"/>
-      </svg>
-    </div>
-    <h1 style="font-size:42px;font-weight:900;letter-spacing:4px;" class="grad-text">ROBO</h1>
-    <p style="color:rgba(103,232,249,.8);font-size:13px;letter-spacing:1px;">Your Personal AI Agent</p>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-      <span style="color:#475569;font-size:11px;">Talk</span><span style="color:#22D3EE;font-size:8px;">●</span>
-      <span style="color:#475569;font-size:11px;">Ask</span><span style="color:#22D3EE;font-size:8px;">●</span>
-      <span style="color:#475569;font-size:11px;">Get Things Done</span>
+<!-- ████ S1 SPLASH ████ -->
+<div id="s1" class="screen active" style="background:linear-gradient(160deg,#060a14 0%,#091124 55%,#0d1b3a 100%);justify-content:space-between;padding:24px 24px 32px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <span id="ota-label" style="font-size:10px;color:#334155;"></span>
+    <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18);">v2.1</span>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
+      <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E2F1FF"/><stop offset="100%" stop-color="#5D92D6"/></linearGradient><linearGradient id="sc" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0B1528"/><stop offset="100%" stop-color="#050B17"/></linearGradient><linearGradient id="ey" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#67E8F9"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs>
+      <rect x="14" y="50" width="10" height="24" rx="5" fill="#0284C7"/><rect x="96" y="50" width="10" height="24" rx="5" fill="#0284C7"/>
+      <rect x="22" y="24" width="76" height="68" rx="28" fill="url(#bg)" stroke="#A5C9EB" stroke-width="1.5"/>
+      <rect x="28" y="32" width="64" height="46" rx="18" fill="url(#sc)" stroke="#1E3A5F" stroke-width="1.5"/>
+      <ellipse cx="44" cy="52" rx="9" ry="12" fill="url(#ey)"/><ellipse cx="76" cy="52" rx="9" ry="12" fill="url(#ey)"/>
+      <circle cx="47" cy="48" r="3.5" fill="#fff"/><circle cx="79" cy="48" r="3.5" fill="#fff"/>
+      <path d="M53 66 Q60 70 67 66" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M60 24 V12" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="60" cy="10" r="5" fill="#00D2FF"/><circle cx="60" cy="10" r="2" fill="#fff"/>
+      <rect x="42" y="93" width="36" height="8" rx="4" fill="#0284C7"/><circle cx="60" cy="97" r="2" fill="#38BDF8"/>
+    </svg>
+    <h1 style="font-size:44px;font-weight:900;letter-spacing:4px;" class="grad-text">ROBO</h1>
+    <p style="color:rgba(103,232,249,.75);font-size:13px;letter-spacing:.8px;">Your Personal AI Agent</p>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
+      <span style="color:#334155;font-size:11px;">Call</span><span style="color:#22D3EE;font-size:7px;">●</span>
+      <span style="color:#334155;font-size:11px;">WhatsApp</span><span style="color:#22D3EE;font-size:7px;">●</span>
+      <span style="color:#334155;font-size:11px;">Launch Apps</span>
     </div>
   </div>
-  <div style="display:flex;flex-direction:column;gap:12px;">
-    <div style="background:#0B1327;border-radius:8px;overflow:hidden;height:6px;border:1px solid #1D2B4A;">
-      <div id="splash-bar" style="height:100%;background:linear-gradient(90deg,#22D3EE,#3B82F6);width:30%;border-radius:8px;transition:width .7s ease;"></div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div style="height:5px;background:#0B1327;border-radius:8px;overflow:hidden;border:1px solid #1D2B4A;">
+      <div id="sbar" style="height:100%;background:linear-gradient(90deg,#22D3EE,#3B82F6);width:20%;border-radius:8px;transition:width .7s ease;"></div>
     </div>
-    <p id="splash-status" style="text-align:center;font-size:11px;color:#475569;">Initializing ROBO...</p>
-    <button class="btn-primary" onclick="goToScreen(2)">Get Started →</button>
-    <button class="btn-secondary" onclick="goToScreen(3)" style="font-size:12px;color:#64748B;">Already have an account? <span style="color:#22D3EE;">Log in</span></button>
+    <p id="sstat" style="text-align:center;font-size:11px;color:#334155;">Starting ROBO...</p>
+    <button class="btn-p" onclick="G(2)">Get Started →</button>
+    <button class="btn-s" onclick="G(3)">Already have an account? <span style="color:#22D3EE;">Log in</span></button>
   </div>
 </div>
 
-<!-- ██ S2: ONBOARDING ██ -->
-<div id="screen-2" class="screen" style="background:#070D1B;padding:24px 20px;">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-    <span style="font-size:22px;">🤖</span>
-    <span style="font-size:18px;font-weight:800;" class="grad-text">Meet ROBO</span>
-  </div>
-  <div class="scroll-body" style="padding-bottom:80px;">
-    <p style="font-size:13px;color:#94A3B8;margin-bottom:20px;line-height:1.6;">ROBO is your always-ready AI that connects to your real Android phone, contacts, apps, email — and works in Gujarati, Hindi, and English.</p>
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
-      <div class="card" style="display:flex;gap:14px;align-items:flex-start;">
-        <span style="font-size:26px;flex-shrink:0;">🎤</span>
-        <div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Voice Commands</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Speak naturally in Gujarati, Hindi, or English. ROBO understands all three.</p></div>
-      </div>
-      <div class="card" style="display:flex;gap:14px;align-items:flex-start;">
-        <span style="font-size:26px;flex-shrink:0;">📱</span>
-        <div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Real Phone Control</p><p style="font-size:12px;color:#64748B;line-height:1.5;">ROBO reads your real contacts, calls them, and opens any app on command.</p></div>
-      </div>
-      <div class="card" style="display:flex;gap:14px;align-items:flex-start;">
-        <span style="font-size:26px;flex-shrink:0;">💬</span>
-        <div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">WhatsApp Reply</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Drafts WhatsApp replies for selected contacts — you approve every message.</p></div>
-      </div>
-      <div class="card" style="display:flex;gap:14px;align-items:flex-start;">
-        <span style="font-size:26px;flex-shrink:0;">📧</span>
-        <div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Email Assistant</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Connect Gmail to reply and draft emails using AI. You review before sending.</p></div>
-      </div>
-      <div class="card" style="display:flex;gap:14px;align-items:flex-start;">
-        <span style="font-size:26px;flex-shrink:0;">🚀</span>
-        <div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">App Launcher</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Open YouTube" or "Open Alarm" — ROBO launches any installed app instantly.</p></div>
+<!-- ████ S2 ONBOARDING ████ -->
+<div id="s2" class="screen" style="background:#070D1B;padding:24px 20px;justify-content:space-between;">
+  <div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;"><span style="font-size:22px;">🤖</span><span style="font-size:18px;font-weight:800;" class="grad-text">What ROBO can do</span></div>
+    <div class="scroll-body" style="max-height:68vh;">
+      <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:10px;">
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📞</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Direct Calling</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Call Mummy" — ROBO calls instantly, no dialer popup.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">💬</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">WhatsApp Messages</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "WhatsApp Rahul — meeting at 5" and it opens WhatsApp with text ready.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🚀</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">App Launcher</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Say "Open YouTube" — launches any installed app, no Play Store.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">📧</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Email Assistant</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Connect Gmail — draft and reply to emails with AI.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🎤</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Gujarati · Hindi · English</p><p style="font-size:12px;color:#64748B;line-height:1.5;">Speak naturally in any of the three languages.</p></div></div>
+        <div class="card" style="display:flex;gap:14px;align-items:flex-start;"><span style="font-size:26px;flex-shrink:0;">🔄</span><div><p style="font-weight:700;font-size:14px;margin-bottom:2px;">Self-Updating App</p><p style="font-size:12px;color:#64748B;line-height:1.5;">ROBO auto-updates itself silently — you never reinstall again.</p></div></div>
       </div>
     </div>
-    <p style="font-size:11px;color:#334155;text-align:center;margin-bottom:20px;line-height:1.5;">Permissions are requested only when you activate the relevant feature. No data leaves your device without your consent.</p>
   </div>
-  <div style="padding-top:12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
-    <button class="btn-primary" onclick="goToScreen(3)">Get Started →</button>
-    <button class="btn-secondary" onclick="goToScreen(3)" style="font-size:12px;">Already have an account? <span style="color:#22D3EE;">Log in</span></button>
+  <div style="display:flex;flex-direction:column;gap:8px;padding-top:10px;">
+    <button class="btn-p" onclick="G(3)">Get Started →</button>
+    <button class="btn-s" onclick="G(3)">Already have an account? <span style="color:#22D3EE;">Log in</span></button>
   </div>
 </div>
 
-<!-- ██ S3: LOGIN / REGISTER ██ -->
-<div id="screen-3" class="screen" style="background:#070D1B;padding:24px 20px;">
-  <button onclick="goBack()" style="color:#64748B;font-size:13px;margin-bottom:20px;display:flex;align-items:center;gap:4px;background:none;">← Back</button>
-  <div style="text-align:center;margin-bottom:28px;">
-    <div style="font-size:38px;margin-bottom:8px;">🤖</div>
-    <h2 style="font-size:22px;font-weight:800;" class="grad-text">Welcome to ROBO</h2>
-    <p style="font-size:12px;color:#475569;margin-top:4px;">Sign in or create your account</p>
-  </div>
-  <!-- Tab -->
-  <div style="display:flex;background:#0B1327;border-radius:12px;padding:3px;margin-bottom:20px;border:1px solid #1D2B4A;">
-    <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;">Sign In</button>
-    <button id="tab-reg" onclick="switchAuthTab('register')" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:600;color:#475569;background:none;">Register</button>
-  </div>
-  <!-- Login Form -->
-  <div id="auth-login" style="display:flex;flex-direction:column;gap:12px;">
-    <div style="position:relative;">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">📧</span>
-      <input id="login-email" class="input-field" type="email" placeholder="Email address" style="padding-left:40px;"/>
+<!-- ████ S3 LOGIN ████ -->
+<div id="s3" class="screen" style="background:#070D1B;padding:24px 20px;justify-content:space-between;">
+  <div>
+    <button onclick="GB()" style="color:#475569;font-size:13px;margin-bottom:18px;display:flex;align-items:center;gap:4px;">← Back</button>
+    <div style="text-align:center;margin-bottom:24px;"><div style="font-size:38px;margin-bottom:6px;">🤖</div><h2 style="font-size:22px;font-weight:800;" class="grad-text">Welcome to ROBO</h2><p style="font-size:12px;color:#334155;margin-top:4px;">Sign in to access your real contacts &amp; apps</p></div>
+    <div style="display:flex;background:#0B1327;border-radius:12px;padding:3px;margin-bottom:18px;border:1px solid #1D2B4A;">
+      <button id="tl" onclick="authTab('l')" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:700;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;">Sign In</button>
+      <button id="tr" onclick="authTab('r')" style="flex:1;padding:9px;border-radius:10px;font-size:13px;color:#475569;">Register</button>
     </div>
-    <div style="position:relative;">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">🔒</span>
-      <input id="login-pass" class="input-field" type="password" placeholder="Password" style="padding-left:40px;"/>
+    <div id="fl" style="display:flex;flex-direction:column;gap:10px;">
+      <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="le" class="inp" type="email" placeholder="Email address" style="padding-left:40px;"/></div>
+      <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">🔒</span><input id="lp" class="inp" type="password" placeholder="Password" style="padding-left:40px;"/></div>
+      <button onclick="doLogin()" class="btn-p" style="margin-top:4px;">Sign In →</button>
+      <button onclick="showT('Password reset link sent to your email.')" style="color:#22D3EE;font-size:12px;">Forgot password?</button>
     </div>
-    <button onclick="doLogin()" class="btn-primary" style="margin-top:4px;">Sign In →</button>
-    <button onclick="alert('Password reset link sent to your email.')" style="color:#22D3EE;font-size:12px;background:none;">Forgot password?</button>
+    <div id="fr" style="display:none;flex-direction:column;gap:10px;">
+      <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">👤</span><input id="rn" class="inp" type="text" placeholder="Full Name" style="padding-left:40px;"/></div>
+      <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="re" class="inp" type="email" placeholder="Email address" style="padding-left:40px;"/></div>
+      <div style="position:relative;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">🔒</span><input id="rp" class="inp" type="password" placeholder="Password (min 8 chars)" style="padding-left:40px;"/></div>
+      <button onclick="doReg()" class="btn-p" style="margin-top:4px;">Create Account →</button>
+    </div>
   </div>
-  <!-- Register Form -->
-  <div id="auth-register" style="display:none;flex-direction:column;gap:12px;">
-    <div style="position:relative;">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">👤</span>
-      <input id="reg-name" class="input-field" type="text" placeholder="Full Name" style="padding-left:40px;"/>
-    </div>
-    <div style="position:relative;">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">📧</span>
-      <input id="reg-email" class="input-field" type="email" placeholder="Email address" style="padding-left:40px;"/>
-    </div>
-    <div style="position:relative;">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">🔒</span>
-      <input id="reg-pass" class="input-field" type="password" placeholder="Password (min 8 chars)" style="padding-left:40px;"/>
-    </div>
-    <button onclick="doRegister()" class="btn-primary" style="margin-top:4px;">Create Account →</button>
-  </div>
-  <div style="margin-top:16px;text-align:center;">
-    <p style="font-size:11px;color:#334155;">By signing in you agree to our Privacy Policy</p>
-  </div>
+  <p style="text-align:center;font-size:11px;color:#1E293B;">By signing in you agree to our Privacy Policy</p>
 </div>
 
-<!-- ██ S4: SETUP PHONE & CONTACTS ██ -->
-<div id="screen-4" class="screen" style="background:#070D1B;padding:24px 20px;">
-  <div class="top-bar" style="padding:0 0 16px;">
-    <button onclick="goBack()" style="color:#64748B;font-size:13px;background:none;">← Back</button>
-    <span style="font-size:14px;font-weight:700;color:#CBD5E1;">Connect Your Phone</span>
-    <button onclick="goToScreen(7)" style="font-size:11px;color:#22D3EE;background:none;">Skip</button>
+<!-- ████ S4 CONNECT PHONE ████ -->
+<div id="s4" class="screen" style="background:#070D1B;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #0D1B3A;flex-shrink:0;">
+    <button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button>
+    <span style="font-size:14px;font-weight:700;color:#CBD5E1;">Setup Contacts &amp; Email</span>
+    <button onclick="G(7)" style="font-size:11px;color:#22D3EE;">Skip</button>
   </div>
-  <div class="scroll-body">
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:44px;margin-bottom:6px;">📱</div>
-      <p style="font-size:13px;color:#64748B;line-height:1.5;">We'll load your real contacts so ROBO knows who to call, message, or WhatsApp on your behalf.</p>
-    </div>
-    <!-- Phone number -->
-    <div class="card" style="margin-bottom:14px;">
-      <p style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Your Mobile Number</p>
+  <div class="scroll-body" style="padding:16px;padding-bottom:90px;">
+    <!-- Phone -->
+    <div class="card" style="margin-bottom:12px;">
+      <p style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Your Mobile Number</p>
       <div style="display:flex;gap:8px;">
-        <div style="background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:12px 14px;font-size:14px;color:#CBD5E1;flex-shrink:0;">+91</div>
-        <input id="phone-input" class="input-field" style="flex:1;background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:12px 14px;" type="tel" placeholder="10-digit mobile number" maxlength="10"/>
+        <div style="background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:12px 13px;font-size:14px;color:#94A3B8;flex-shrink:0;">+91</div>
+        <input id="phIn" class="inp" style="flex:1;" type="tel" placeholder="10-digit number" maxlength="10"/>
       </div>
     </div>
     <!-- Email -->
-    <div class="card" style="margin-bottom:14px;">
-      <p style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">Gmail / Email Account</p>
-      <div style="position:relative;">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;">📧</span>
-        <input id="email-input" class="input-field" style="background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:12px 14px 12px 40px;" type="email" placeholder="your@gmail.com"/>
-      </div>
-      <p style="font-size:11px;color:#334155;margin-top:8px;line-height:1.4;">ROBO will draft and suggest email replies. You approve everything before it sends.</p>
+    <div class="card" style="margin-bottom:12px;">
+      <p style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Gmail / Email</p>
+      <div style="position:relative;"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="emIn" class="inp" type="email" placeholder="your@gmail.com" style="padding-left:38px;"/></div>
+      <p style="font-size:11px;color:#1E293B;margin-top:7px;">ROBO drafts replies — you approve before sending.</p>
     </div>
-    <!-- Contacts status -->
-    <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <!-- Contacts load -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">Phone Contacts</p>
-        <span id="contacts-badge" class="badge badge-red">Not Loaded</span>
+        <span id="cbadge" class="badge b-red">Not loaded</span>
       </div>
-      <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.5;">Load your real contacts so you can pick who ROBO can call or message.</p>
-      <button onclick="loadRealContacts()" style="width:100%;padding:11px;border-radius:12px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#22D3EE;font-size:13px;font-weight:700;">📋 Load My Contacts</button>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;line-height:1.5;">Load your real contacts so ROBO can call and WhatsApp them by name.</p>
+      <button onclick="loadContacts()" style="width:100%;padding:11px;border-radius:12px;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.25);color:#22D3EE;font-size:13px;font-weight:700;">📋 Load My Contacts</button>
     </div>
     <!-- Call contacts -->
-    <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">📞 Call Contacts</p>
-        <span id="call-count-badge" class="badge badge-blue">0 selected</span>
+        <span id="callBadge" class="badge b-blue">0 selected</span>
       </div>
-      <p style="font-size:12px;color:#64748B;margin-bottom:12px;">Select contacts ROBO can call. You can say "ROBO call Mummy" and it dials instantly.</p>
-      <button onclick="openContactPicker('call')" style="width:100%;padding:11px;border-radius:12px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:13px;">Select Contacts for Calling →</button>
-      <div id="call-selected-list" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO will call these people directly when you say their name.</p>
+      <button onclick="openPicker('call')" style="width:100%;padding:11px;border-radius:12px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:13px;">Select Contacts for Calling →</button>
+      <div id="callChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
     </div>
     <!-- WA contacts -->
     <div class="card" style="margin-bottom:24px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">💬 WhatsApp Contacts</p>
-        <span id="wa-count-badge" class="badge badge-blue">0 selected</span>
+        <span id="waBadge" class="badge b-blue">0 selected</span>
       </div>
-      <p style="font-size:12px;color:#64748B;margin-bottom:12px;">Select contacts and groups ROBO can message via WhatsApp.</p>
-      <button onclick="openContactPicker('wa')" style="width:100%;padding:11px;border-radius:12px;background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.3);color:#25D366;font-size:13px;margin-bottom:8px;">Select Contacts for WhatsApp →</button>
-      <button onclick="openGroupPicker()" style="width:100%;padding:11px;border-radius:12px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:13px;">Select WhatsApp Groups →</button>
-      <div id="wa-selected-list" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <p style="font-size:12px;color:#475569;margin-bottom:10px;">ROBO will open WhatsApp for these people with a pre-filled message.</p>
+      <button onclick="openPicker('wa')" style="width:100%;padding:11px;border-radius:12px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.25);color:#25D366;font-size:13px;margin-bottom:8px;">Select WhatsApp Contacts →</button>
+      <div id="waChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
     </div>
   </div>
-  <div style="padding-top:12px;flex-shrink:0;">
-    <button class="btn-primary" onclick="saveSetupAndContinue()">Save & Continue →</button>
+  <div style="padding:10px 16px 16px;flex-shrink:0;border-top:1px solid #0D1B3A;background:#070D1B;">
+    <button class="btn-p" onclick="saveSetup()">Save &amp; Continue →</button>
   </div>
 </div>
 
-<!-- ██ S7: MAIN DASHBOARD ██ -->
-<div id="screen-7" class="screen" style="background:#060A14;">
-  <!-- Fixed header -->
-  <div style="padding:14px 16px 10px;flex-shrink:0;background:rgba(6,10,20,.97);border-bottom:1px solid #0D1B3A;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+<!-- ████ S7 DASHBOARD ████ -->
+<div id="s7" class="screen" style="background:#060A14;">
+  <!-- Header -->
+  <div style="padding:12px 16px 8px;flex-shrink:0;background:rgba(6,10,20,.98);border-bottom:1px solid #0D1B3A;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:8px;">
-        <svg viewBox="0 0 50 50" width="28" height="28" fill="none"><rect x="5" y="20" width="5" height="12" rx="2.5" fill="#0284C7"/><rect x="40" y="20" width="5" height="12" rx="2.5" fill="#0284C7"/><rect x="8" y="8" width="34" height="32" rx="13" fill="#B8D4F0"/><rect x="11" y="13" width="28" height="22" rx="9" fill="#0B1528"/><ellipse cx="19" cy="23" rx="5" ry="6" fill="#22D3EE"/><ellipse cx="31" cy="23" rx="5" ry="6" fill="#22D3EE"/><circle cx="20.5" cy="21" r="2" fill="#fff"/><circle cx="32.5" cy="21" r="2" fill="#fff"/><path d="M22 29 Q25 31 28 29" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round"/><circle cx="25" cy="5" r="2.5" fill="#00D2FF"/></svg>
+        <svg viewBox="0 0 50 50" width="26" height="26" fill="none"><rect x="5" y="20" width="5" height="12" rx="2.5" fill="#0284C7"/><rect x="40" y="20" width="5" height="12" rx="2.5" fill="#0284C7"/><rect x="8" y="8" width="34" height="32" rx="13" fill="#B8D4F0"/><rect x="11" y="13" width="28" height="22" rx="9" fill="#0B1528"/><ellipse cx="19" cy="23" rx="5" ry="6" fill="#22D3EE"/><ellipse cx="31" cy="23" rx="5" ry="6" fill="#22D3EE"/><circle cx="20.5" cy="21" r="2" fill="#fff"/><circle cx="32.5" cy="21" r="2" fill="#fff"/><path d="M22 29 Q25 31 28 29" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round"/><circle cx="25" cy="5" r="2.5" fill="#00D2FF"/></svg>
         <span style="font-size:18px;font-weight:900;letter-spacing:2px;" class="grad-text">ROBO</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button onclick="toggleAgent()" id="agent-toggle" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#22D3EE;font-size:11px;font-weight:700;">
-          <span id="agent-dot" class="dot dot-green"></span><span id="agent-label">Agent ON</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="atoggle" onclick="toggleAgent()" style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#22D3EE;font-size:11px;font-weight:700;">
+          <span id="adot" class="dot dot-g"></span><span id="albl">Agent ON</span>
         </button>
-        <button onclick="goToScreen(16)" style="width:34px;height:34px;border-radius:12px;background:#10192E;border:1px solid #1D2B4A;font-size:16px;display:flex;align-items:center;justify-content:center;">⚙️</button>
+        <button onclick="G(16)" style="width:32px;height:32px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;font-size:15px;display:flex;align-items:center;justify-content:center;">⚙️</button>
       </div>
     </div>
-    <div>
-      <h2 id="dash-greeting" style="font-size:20px;font-weight:800;color:#F1F5F9;">Good Morning, Akshar 👋</h2>
-      <p style="font-size:12px;color:#475569;">How can I help you today?</p>
-    </div>
+    <h2 id="greet" style="font-size:19px;font-weight:800;color:#F1F5F9;">Good Morning, Akshar 👋</h2>
+    <p style="font-size:12px;color:#334155;">How can I help you today?</p>
   </div>
-  <!-- Scrollable content -->
-  <div class="scroll-body" style="padding:14px 16px 80px;">
+  <!-- Scroll area -->
+  <div class="scroll-body" style="padding:12px 16px 80px;">
     <!-- Status row -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <div class="card" style="flex:1;padding:10px 12px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:18px;">📱</span>
-        <div><p style="font-size:10px;color:#64748B;">Phone</p><p style="font-size:12px;font-weight:700;color:#22C55E;">Connected</p></div>
-      </div>
-      <div class="card" style="flex:1;padding:10px 12px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:18px;">📧</span>
-        <div><p style="font-size:10px;color:#64748B;">Email</p><p id="email-status-dash" style="font-size:12px;font-weight:700;color:#F59E0B;">Not set</p></div>
-      </div>
-      <div class="card" style="flex:1;padding:10px 12px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:18px;">💬</span>
-        <div><p style="font-size:10px;color:#64748B;">WhatsApp</p><p style="font-size:12px;font-weight:700;color:#25D366;">Ready</p></div>
-      </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">📱</span><div><p style="font-size:10px;color:#334155;">Phone</p><p style="font-size:12px;font-weight:700;color:#22C55E;">Connected</p></div></div>
+      <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">📧</span><div><p style="font-size:10px;color:#334155;">Email</p><p id="emStat" style="font-size:12px;font-weight:700;color:#F59E0B;">Not set</p></div></div>
+      <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">💬</span><div><p style="font-size:10px;color:#334155;">WhatsApp</p><p style="font-size:12px;font-weight:700;color:#25D366;">Ready</p></div></div>
     </div>
-
-    <!-- Mic + Input -->
-    <div class="card" style="padding:20px;text-align:center;margin-bottom:14px;background:linear-gradient(160deg,#10192E,#0B1327);">
-      <button onclick="startVoice()" class="dashboard-mic-btn mic-pulse" style="margin-bottom:14px;">🎤</button>
-      <div style="display:flex;align-items:center;gap:8px;background:#0B1327;border:1px solid #1D2B4A;border-radius:14px;padding:10px 14px;">
-        <input id="dash-input" type="text" placeholder="Tap to speak or type a message..." style="flex:1;font-size:13px;color:#CBD5E1;background:transparent;border:none;outline:none;" onkeydown="if(event.key==='Enter')sendDashMsg()"/>
-        <button onclick="sendDashMsg()" style="font-size:18px;background:none;">→</button>
+    <!-- Mic + text input -->
+    <div class="card" style="padding:18px;text-align:center;margin-bottom:14px;background:linear-gradient(160deg,#10192E,#0B1327);">
+      <button id="micBtn" onclick="startVoice()" style="width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 14px;box-shadow:0 0 28px rgba(6,182,212,.45);" class="vring">🎤</button>
+      <div style="display:flex;align-items:center;gap:8px;background:#0B1327;border:1px solid #1D2B4A;border-radius:13px;padding:9px 12px;">
+        <input id="dashIn" type="text" placeholder="Type a command or tap mic..." style="flex:1;font-size:13px;color:#CBD5E1;background:transparent;border:none;outline:none;" onkeydown="if(event.key==='Enter')dashCmd()"/>
+        <button onclick="dashCmd()" style="font-size:17px;color:#22D3EE;">→</button>
       </div>
-      <p id="dash-msg-reply" style="margin-top:10px;font-size:12px;color:#22D3EE;display:none;"></p>
+      <p id="dashReply" style="margin-top:9px;font-size:12px;color:#22D3EE;min-height:16px;"></p>
     </div>
-
-    <!-- Quick Actions -->
-    <div style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <!-- Quick actions -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
         <p style="font-size:13px;font-weight:700;color:#CBD5E1;">Quick Actions</p>
-        <button onclick="goToScreen(20)" style="font-size:11px;color:#22D3EE;background:none;">Manage →</button>
+        <button onclick="G(4)" style="font-size:11px;color:#22D3EE;">Manage →</button>
       </div>
-      <div class="quick-actions-grid">
-        <button onclick="quickCall()" class="quick-btn"><span style="font-size:20px;">📞</span><div><p style="font-size:12px;font-weight:700;">Call</p><p id="quick-call-name" style="font-size:10px;color:#64748B;">Mummy</p></div></button>
-        <button onclick="quickWhatsApp()" class="quick-btn"><span style="font-size:20px;color:#25D366;">💬</span><div><p style="font-size:12px;font-weight:700;">WhatsApp</p><p id="quick-wa-name" style="font-size:10px;color:#64748B;">Rahul</p></div></button>
-        <button onclick="goToScreen(22)" class="quick-btn"><span style="font-size:20px;">📧</span><div><p style="font-size:12px;font-weight:700;">Email</p><p style="font-size:10px;color:#64748B;">Draft reply</p></div></button>
-        <button onclick="goToScreen(21)" class="quick-btn"><span style="font-size:20px;">🚀</span><div><p style="font-size:12px;font-weight:700;">Apps</p><p style="font-size:10px;color:#64748B;">Launch any app</p></div></button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+        <button onclick="quickCall()" class="qa"><span style="font-size:20px;">📞</span><div><p style="font-size:12px;font-weight:700;">Call</p><p id="qcName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
+        <button onclick="quickWA()" class="qa"><span style="font-size:20px;color:#25D366;">💬</span><div><p style="font-size:12px;font-weight:700;">WhatsApp</p><p id="qwName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
+        <button onclick="G(22)" class="qa"><span style="font-size:20px;">📧</span><div><p style="font-size:12px;font-weight:700;">Email</p><p style="font-size:10px;color:#475569;">Draft reply</p></div></button>
+        <button onclick="G(21)" class="qa"><span style="font-size:20px;">🚀</span><div><p style="font-size:12px;font-weight:700;">Launch App</p><p style="font-size:10px;color:#475569;">Any installed app</p></div></button>
       </div>
     </div>
-
-    <!-- App Launcher Preview -->
-    <div style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <p style="font-size:13px;font-weight:700;color:#CBD5E1;">📱 Quick Launch</p>
-        <button onclick="goToScreen(21)" style="font-size:11px;color:#22D3EE;background:none;">All Apps →</button>
+    <!-- App quick-launch -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+        <p style="font-size:13px;font-weight:700;color:#CBD5E1;">Quick Launch</p>
+        <button onclick="G(21)" style="font-size:11px;color:#22D3EE;">All Apps →</button>
       </div>
       <div class="app-grid">
-        <button class="app-icon-btn" onclick="launchApp('youtube')"><div class="app-icon-wrap" style="background:rgba(239,68,68,.1);">▶️</div><span class="app-icon-label">YouTube</span></button>
-        <button class="app-icon-btn" onclick="launchApp('whatsapp')"><div class="app-icon-wrap" style="background:rgba(37,211,102,.1);">💬</div><span class="app-icon-label">WhatsApp</span></button>
-        <button class="app-icon-btn" onclick="launchApp('camera')"><div class="app-icon-wrap" style="background:rgba(245,158,11,.1);">📷</div><span class="app-icon-label">Camera</span></button>
-        <button class="app-icon-btn" onclick="launchApp('alarm')"><div class="app-icon-wrap" style="background:rgba(99,102,241,.1);">⏰</div><span class="app-icon-label">Alarm</span></button>
-        <button class="app-icon-btn" onclick="launchApp('gmail')"><div class="app-icon-wrap" style="background:rgba(239,68,68,.1);">📧</div><span class="app-icon-label">Gmail</span></button>
-        <button class="app-icon-btn" onclick="launchApp('maps')"><div class="app-icon-wrap" style="background:rgba(34,197,94,.1);">🗺️</div><span class="app-icon-label">Maps</span></button>
-        <button class="app-icon-btn" onclick="launchApp('playstore')"><div class="app-icon-wrap" style="background:rgba(59,130,246,.1);">🏪</div><span class="app-icon-label">Play Store</span></button>
-        <button class="app-icon-btn" onclick="launchApp('chrome')"><div class="app-icon-wrap" style="background:rgba(251,191,36,.1);">🌐</div><span class="app-icon-label">Chrome</span></button>
+        <button class="app-btn" onclick="launch('youtube')"><div class="app-ic" style="background:rgba(239,68,68,.1);">▶️</div><span class="app-lbl">YouTube</span></button>
+        <button class="app-btn" onclick="launch('whatsapp')"><div class="app-ic" style="background:rgba(37,211,102,.1);">💬</div><span class="app-lbl">WhatsApp</span></button>
+        <button class="app-btn" onclick="launch('camera')"><div class="app-ic" style="background:rgba(245,158,11,.1);">📷</div><span class="app-lbl">Camera</span></button>
+        <button class="app-btn" onclick="launch('alarm')"><div class="app-ic" style="background:rgba(99,102,241,.1);">⏰</div><span class="app-lbl">Alarm</span></button>
+        <button class="app-btn" onclick="launch('gmail')"><div class="app-ic" style="background:rgba(239,68,68,.1);">📧</div><span class="app-lbl">Gmail</span></button>
+        <button class="app-btn" onclick="launch('maps')"><div class="app-ic" style="background:rgba(34,197,94,.1);">🗺️</div><span class="app-lbl">Maps</span></button>
+        <button class="app-btn" onclick="launch('chrome')"><div class="app-ic" style="background:rgba(251,191,36,.1);">🌐</div><span class="app-lbl">Chrome</span></button>
+        <button class="app-btn" onclick="launch('settings')"><div class="app-ic" style="background:rgba(100,116,139,.1);">⚙️</div><span class="app-lbl">Settings</span></button>
       </div>
     </div>
-
-    <!-- Recent Tasks -->
-    <div style="margin-bottom:16px;">
-      <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:10px;">Recent Tasks</p>
-      <div class="card">
-        <div class="recent-task"><span style="font-size:20px;">📞</span><div style="flex:1;"><p style="font-size:13px;font-weight:600;">Called Mummy</p><p style="font-size:11px;color:#64748B;">2 hours ago</p></div><span class="badge badge-green">Done</span></div>
-        <div class="recent-task"><span style="font-size:20px;">💬</span><div style="flex:1;"><p style="font-size:13px;font-weight:600;">WhatsApp — Rahul</p><p style="font-size:11px;color:#64748B;">Yesterday</p></div><span class="badge badge-green">Sent</span></div>
-        <div class="recent-task"><span style="font-size:20px;">🎙️</span><div style="flex:1;"><p style="font-size:13px;font-weight:600;">"Open YouTube"</p><p style="font-size:11px;color:#64748B;">Yesterday</p></div><span class="badge badge-green">Done</span></div>
+    <!-- History -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+        <p style="font-size:13px;font-weight:700;color:#CBD5E1;">Recent Activity</p>
+        <button onclick="G(23)" style="font-size:11px;color:#22D3EE;">See all →</button>
       </div>
+      <div class="card" id="histPreview"></div>
     </div>
   </div>
 </div>
 
-<!-- ██ S8: VOICE ASSISTANT ██ -->
-<div id="screen-8" class="screen" style="background:#060A14;padding:0;">
-  <div style="padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #0D1B3A;flex-shrink:0;">
-    <button onclick="goBack()" style="background:none;color:#64748B;font-size:20px;">←</button>
-    <p style="font-size:16px;font-weight:700;flex:1;text-align:center;" class="grad-text">Voice Assistant</p>
-    <button onclick="goToScreen(9)" style="font-size:11px;color:#22D3EE;background:none;">Chat</button>
+<!-- ████ S8 VOICE ████ -->
+<div id="s8" class="screen" style="background:#060A14;">
+  <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #0D1B3A;flex-shrink:0;">
+    <button onclick="GB()" style="color:#475569;font-size:20px;">←</button>
+    <p style="font-size:15px;font-weight:700;flex:1;text-align:center;" class="grad-text">Voice Assistant</p>
+    <button onclick="G(9)" style="font-size:11px;color:#22D3EE;">Chat</button>
   </div>
-  <div class="scroll-body" style="padding:20px 16px 80px;display:flex;flex-direction:column;align-items:center;">
-    <div style="width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:56px;margin:20px auto;box-shadow:0 0 40px rgba(6,182,212,.5);" id="voice-btn" onclick="triggerVoice()">🎤</div>
-    <p id="voice-state" style="font-size:14px;font-weight:600;color:#22D3EE;margin-bottom:8px;">Tap mic to speak</p>
-    <div id="voice-transcript" style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:14px;width:100%;min-height:60px;font-size:13px;color:#94A3B8;text-align:center;margin-bottom:16px;line-height:1.6;">Waiting for your command...</div>
-    <div style="width:100%;margin-bottom:16px;">
-      <p style="font-size:12px;color:#64748B;margin-bottom:8px;">Try saying:</p>
+  <div class="scroll-body" style="padding:20px 16px 90px;display:flex;flex-direction:column;align-items:center;">
+    <button id="vBtn" onclick="trigVoice()" style="width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:52px;margin:16px auto;box-shadow:0 0 36px rgba(6,182,212,.5);" class="vring">🎤</button>
+    <p id="vState" style="font-size:14px;font-weight:600;color:#22D3EE;margin-bottom:10px;">Tap to speak</p>
+    <div id="vTrans" style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:14px;width:100%;min-height:56px;font-size:13px;color:#64748B;text-align:center;margin-bottom:14px;line-height:1.6;">Waiting for command...</div>
+    <div id="vAction" style="background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);border-radius:12px;padding:12px 14px;width:100%;font-size:13px;color:#22D3EE;text-align:center;margin-bottom:16px;display:none;"></div>
+    <!-- Example commands -->
+    <div style="width:100%;margin-bottom:14px;">
+      <p style="font-size:11px;color:#334155;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Try saying</p>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        <span style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;">ROBO, call Mummy</span>
-        <span style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;">Open YouTube</span>
-        <span style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;">WhatsApp Rahul</span>
-        <span style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;">Set alarm 7am</span>
-        <span style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;">Open Gmail</span>
+        <span onclick="testCmd('Call Mummy')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Call Mummy</span>
+        <span onclick="testCmd('WhatsApp Rahul — meeting at 5')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">WhatsApp Rahul</span>
+        <span onclick="testCmd('Open YouTube')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Open YouTube</span>
+        <span onclick="testCmd('Open Alarm')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Open Alarm</span>
+        <span onclick="testCmd('Open Gmail')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Open Gmail</span>
+        <span onclick="testCmd('Send WhatsApp to Papa — I am coming home')" style="background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:5px 10px;font-size:11px;color:#94A3B8;cursor:pointer;">Send WA to Papa</span>
       </div>
     </div>
-    <!-- Language select -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button onclick="setVoiceLang('gu')" id="lang-gu" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,211,238,.15);border:1px solid rgba(34,211,238,.4);color:#22D3EE;font-size:12px;font-weight:700;">ગુ</button>
-      <button onclick="setVoiceLang('hi')" id="lang-hi" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#94A3B8;font-size:12px;">हि</button>
-      <button onclick="setVoiceLang('en')" id="lang-en" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#94A3B8;font-size:12px;">EN</button>
+    <!-- Language -->
+    <div style="display:flex;gap:8px;width:100%;margin-bottom:14px;">
+      <button id="lg-gu" onclick="setLang('gu')" style="flex:1;padding:9px;border-radius:10px;background:rgba(34,211,238,.15);border:1px solid rgba(34,211,238,.4);color:#22D3EE;font-size:13px;font-weight:700;">ગુ</button>
+      <button id="lg-hi" onclick="setLang('hi')" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;">हि</button>
+      <button id="lg-en" onclick="setLang('en')" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;">EN</button>
     </div>
-    <!-- Text input fallback -->
+    <!-- Text fallback -->
     <div style="display:flex;gap:8px;width:100%;">
-      <input id="voice-text-input" class="input-field" style="flex:1;background:#10192E;border:1px solid #1D2B4A;border-radius:12px;padding:11px 14px;" type="text" placeholder="Or type a command..." onkeydown="if(event.key==='Enter')sendVoiceText()"/>
-      <button onclick="sendVoiceText()" style="width:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);font-size:18px;display:flex;align-items:center;justify-content:center;">→</button>
+      <input id="vText" class="inp" type="text" placeholder="Or type a command..." style="flex:1;" onkeydown="if(event.key==='Enter')runTextCmd()"/>
+      <button onclick="runTextCmd()" style="width:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);font-size:18px;display:flex;align-items:center;justify-content:center;color:#fff;">→</button>
     </div>
   </div>
 </div>
 
-<!-- ██ S9: CHAT ██ -->
-<div id="screen-9" class="screen" style="background:#060A14;">
-  <div style="padding:16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #0D1B3A;flex-shrink:0;">
-    <button onclick="goBack()" style="background:none;color:#64748B;font-size:20px;">←</button>
-    <p style="font-size:16px;font-weight:700;flex:1;text-align:center;" class="grad-text">AI Chat</p>
-    <button onclick="clearChat()" style="font-size:11px;color:#64748B;background:none;">Clear</button>
+<!-- ████ S9 CHAT ████ -->
+<div id="s9" class="screen" style="background:#060A14;">
+  <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #0D1B3A;flex-shrink:0;">
+    <button onclick="GB()" style="color:#475569;font-size:20px;">←</button>
+    <p style="font-size:15px;font-weight:700;flex:1;text-align:center;" class="grad-text">AI Chat</p>
+    <button onclick="clearChat()" style="font-size:11px;color:#475569;">Clear</button>
   </div>
-  <div id="chat-messages" class="scroll-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;padding-bottom:80px;">
-    <div style="display:flex;gap:10px;align-items:flex-start;">
-      <div style="width:32px;height:32px;border-radius:10px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div>
-      <div style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px 14px 14px 4px;padding:12px;max-width:78%;"><p style="font-size:13px;color:#CBD5E1;line-height:1.6;">Hello! I'm ROBO. I can call your contacts, send WhatsApp messages, open apps, draft emails, and much more. What would you like me to do?</p></div>
+  <div id="chatMsgs" class="scroll-body" style="padding:12px 16px;display:flex;flex-direction:column;gap:10px;padding-bottom:80px;">
+    <div style="display:flex;gap:10px;align-items:flex-end;">
+      <div style="width:30px;height:30px;border-radius:9px;background:rgba(34,211,238,.12);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</div>
+      <div class="cb-bot">Hello! I'm ROBO. Say or type a command — I'll call, WhatsApp, launch apps, and more. What do you need?</div>
     </div>
   </div>
-  <!-- Input bar -->
   <div style="padding:10px 16px 16px;border-top:1px solid #0D1B3A;flex-shrink:0;background:#060A14;">
     <div style="display:flex;gap:8px;">
-      <button onclick="startVoice()" style="width:44px;height:44px;border-radius:12px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);font-size:20px;display:flex;align-items:center;justify-content:center;">🎤</button>
-      <input id="chat-input" class="input-field" style="flex:1;background:#10192E;border:1px solid #1D2B4A;border-radius:12px;padding:11px 14px;" type="text" placeholder="Ask ROBO anything..." onkeydown="if(event.key==='Enter')sendChat()"/>
-      <button onclick="sendChat()" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);font-size:18px;display:flex;align-items:center;justify-content:center;">→</button>
+      <button onclick="startVoice()" style="width:42px;height:42px;border-radius:12px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);font-size:19px;display:flex;align-items:center;justify-content:center;">🎤</button>
+      <input id="chatIn" class="inp" type="text" placeholder="Type a command..." style="flex:1;" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button onclick="sendChat()" style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);font-size:17px;display:flex;align-items:center;justify-content:center;color:#fff;">→</button>
     </div>
   </div>
 </div>
 
-<!-- ██ S15: DEVICES ██ -->
-<div id="screen-15" class="screen" style="background:#070D1B;">
-  <div class="top-bar" style="border-bottom:1px solid #0D1B3A;"><button onclick="goBack()" style="color:#64748B;font-size:13px;background:none;">← Back</button><span style="font-size:15px;font-weight:700;">My Devices</span><span></span></div>
+<!-- ████ S15 DEVICES ████ -->
+<div id="s15" class="screen" style="background:#070D1B;">
+  <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">My Devices</span><span style="width:40px;"></span></div>
   <div class="scroll-body" style="padding:16px;padding-bottom:80px;">
-    <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div style="width:44px;height:44px;border-radius:14px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2);display:flex;align-items:center;justify-content:center;font-size:22px;">📱</div>
-        <div style="flex:1;"><p style="font-size:14px;font-weight:700;">Android Phone</p><p style="font-size:11px;color:#22C55E;">Connected</p></div>
-        <span class="dot dot-green"></span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#64748B;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;"><span>Device Name</span><span style="color:#CBD5E1;">Your Android Device</span></div>
-        <div style="display:flex;justify-content:space-between;"><span>Status</span><span style="color:#22C55E;">Online</span></div>
-      </div>
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div style="width:42px;height:42px;border-radius:13px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2);display:flex;align-items:center;justify-content:center;font-size:21px;">📱</div><div style="flex:1;"><p style="font-size:14px;font-weight:700;">Android Phone</p><p style="font-size:11px;color:#22C55E;">Connected</p></div><span class="dot dot-g"></span></div>
       <div style="display:flex;gap:8px;">
-        <button onclick="goToScreen(4)" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:12px;">Manage Contacts</button>
-        <button onclick="goToScreen(18)" style="flex:1;padding:9px;border-radius:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#F87171;font-size:12px;">Disconnect</button>
+        <button onclick="G(4)" style="flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#CBD5E1;font-size:12px;">Manage Contacts</button>
+        <button onclick="showT('Device disconnected.')" style="flex:1;padding:9px;border-radius:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#F87171;font-size:12px;">Disconnect</button>
       </div>
     </div>
-    <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div style="width:44px;height:44px;border-radius:14px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:22px;">💻</div>
-        <div style="flex:1;"><p style="font-size:14px;font-weight:700;">Laptop</p><p style="font-size:11px;color:#F59E0B;">Not Connected</p></div>
-        <span class="dot dot-amber"></span>
-      </div>
-      <button style="width:100%;padding:9px;border-radius:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);color:#818CF8;font-size:12px;">Connect Laptop →</button>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div style="width:42px;height:42px;border-radius:13px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);display:flex;align-items:center;justify-content:center;font-size:21px;">💻</div><div style="flex:1;"><p style="font-size:14px;font-weight:700;">Laptop</p><p style="font-size:11px;color:#F59E0B;">Not Connected</p></div><span class="dot dot-a"></span></div>
+      <button style="width:100%;padding:9px;border-radius:10px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818CF8;font-size:12px;">Connect Laptop →</button>
     </div>
   </div>
 </div>
 
-<!-- ██ S16: SETTINGS ██ -->
-<div id="screen-16" class="screen" style="background:#070D1B;">
-  <div class="top-bar" style="border-bottom:1px solid #0D1B3A;"><button onclick="goBack()" style="color:#64748B;font-size:13px;background:none;">← Back</button><span style="font-size:15px;font-weight:700;">Settings</span><span></span></div>
+<!-- ████ S16 SETTINGS ████ -->
+<div id="s16" class="screen" style="background:#070D1B;">
+  <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Settings</span><span style="width:40px;"></span></div>
   <div class="scroll-body" style="padding:16px;padding-bottom:80px;">
-    <p style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Account</p>
-    <div class="card" style="margin-bottom:14px;display:flex;flex-direction:column;gap:2px;">
-      <button onclick="goToScreen(4)" style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #0D1B3A;background:none;width:100%;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📱</span><span style="font-size:14px;color:#CBD5E1;">Phone & Contacts</span></div><span style="color:#475569;">›</span></button>
-      <button onclick="goToScreen(22)" style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #0D1B3A;background:none;width:100%;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📧</span><span style="font-size:14px;color:#CBD5E1;">Email Settings</span></div><span style="color:#475569;">›</span></button>
-      <button onclick="goToScreen(21)" style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;background:none;width:100%;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">🚀</span><span style="font-size:14px;color:#CBD5E1;">App Launcher</span></div><span style="color:#475569;">›</span></button>
-    </div>
-    <p style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Permissions</p>
+    <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Account</p>
     <div class="card" style="margin-bottom:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Microphone</span><span class="badge badge-green">Granted</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Contacts</span><span id="perm-contacts" class="badge badge-red">Not Granted</span></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;"><span style="font-size:13px;color:#CBD5E1;">Notifications</span><span class="badge badge-green">Granted</span></div>
+      <button onclick="G(4)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #0D1B3A;width:100%;background:none;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📱</span><span style="font-size:14px;color:#CBD5E1;">Phone &amp; Contacts</span></div><span style="color:#334155;">›</span></button>
+      <button onclick="G(22)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #0D1B3A;width:100%;background:none;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📧</span><span style="font-size:14px;color:#CBD5E1;">Email Settings</span></div><span style="color:#334155;">›</span></button>
+      <button onclick="G(21)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #0D1B3A;width:100%;background:none;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">🚀</span><span style="font-size:14px;color:#CBD5E1;">App Launcher</span></div><span style="color:#334155;">›</span></button>
+      <button onclick="G(23)" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;width:100%;background:none;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📜</span><span style="font-size:14px;color:#CBD5E1;">Task History</span></div><span style="color:#334155;">›</span></button>
     </div>
-    <button onclick="doLogout()" style="width:100%;padding:13px;border-radius:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#F87171;font-size:14px;font-weight:700;margin-top:8px;">Sign Out</button>
+    <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Permissions</p>
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Microphone</span><span class="badge b-green">Granted</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Contacts</span><span id="permC" class="badge b-amber">Pending</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #0D1B3A;"><span style="font-size:13px;color:#CBD5E1;">Phone / Call</span><span id="permP" class="badge b-amber">Pending</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;"><span style="font-size:13px;color:#CBD5E1;">Notifications</span><span class="badge b-green">Granted</span></div>
+    </div>
+    <button onclick="doLogout()" style="width:100%;padding:13px;border-radius:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#F87171;font-size:14px;font-weight:700;">Sign Out</button>
   </div>
 </div>
 
-<!-- ██ S21: APP LAUNCHER ██ -->
-<div id="screen-21" class="screen" style="background:#070D1B;">
-  <div class="top-bar" style="border-bottom:1px solid #0D1B3A;"><button onclick="goBack()" style="color:#64748B;font-size:13px;background:none;">← Back</button><span style="font-size:15px;font-weight:700;">Launch Any App</span><span></span></div>
+<!-- ████ S21 APP LAUNCHER ████ -->
+<div id="s21" class="screen" style="background:#070D1B;">
+  <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Launch Any App</span><span style="width:40px;"></span></div>
   <div class="scroll-body" style="padding:16px;padding-bottom:80px;">
-    <div style="position:relative;margin-bottom:16px;">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;">🔍</span>
-      <input id="app-search" class="input-field" style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px;padding:12px 14px 12px 42px;" type="text" placeholder="Search app or say its name..." oninput="filterApps(this.value)"/>
+    <div style="position:relative;margin-bottom:14px;"><span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;">🔍</span><input id="appSearch" class="inp" type="text" placeholder="Search app..." style="padding-left:38px;" oninput="filterApps(this.value)"/></div>
+    <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+      <button onclick="startVoice()" style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#0EA5E9,#06B6D4);font-size:23px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">🎤</button>
+      <div><p style="font-size:13px;font-weight:700;color:#CBD5E1;">Say "Open [App Name]"</p><p style="font-size:11px;color:#334155;">Opens installed app instantly — no Play Store</p></div>
     </div>
-    <!-- Voice launch -->
-    <div class="card" style="margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-      <button onclick="startVoice()" style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#0EA5E9,#06B6D4);font-size:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">🎤</button>
-      <div><p style="font-size:13px;font-weight:700;color:#CBD5E1;">Say "Open [App Name]"</p><p style="font-size:11px;color:#64748B;">Works in Gujarati, Hindi, English</p></div>
-    </div>
-    <p style="font-size:11px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">All Apps</p>
-    <div id="app-grid-full" class="app-grid">
-      <button class="app-icon-btn" onclick="launchApp('youtube')"><div class="app-icon-wrap" style="background:rgba(239,68,68,.12);">▶️</div><span class="app-icon-label">YouTube</span></button>
-      <button class="app-icon-btn" onclick="launchApp('whatsapp')"><div class="app-icon-wrap" style="background:rgba(37,211,102,.12);">💬</div><span class="app-icon-label">WhatsApp</span></button>
-      <button class="app-icon-btn" onclick="launchApp('gmail')"><div class="app-icon-wrap" style="background:rgba(239,68,68,.12);">📧</div><span class="app-icon-label">Gmail</span></button>
-      <button class="app-icon-btn" onclick="launchApp('maps')"><div class="app-icon-wrap" style="background:rgba(34,197,94,.12);">🗺️</div><span class="app-icon-label">Maps</span></button>
-      <button class="app-icon-btn" onclick="launchApp('chrome')"><div class="app-icon-wrap" style="background:rgba(251,191,36,.12);">🌐</div><span class="app-icon-label">Chrome</span></button>
-      <button class="app-icon-btn" onclick="launchApp('camera')"><div class="app-icon-wrap" style="background:rgba(245,158,11,.12);">📷</div><span class="app-icon-label">Camera</span></button>
-      <button class="app-icon-btn" onclick="launchApp('playstore')"><div class="app-icon-wrap" style="background:rgba(59,130,246,.12);">🏪</div><span class="app-icon-label">Play Store</span></button>
-      <button class="app-icon-btn" onclick="launchApp('alarm')"><div class="app-icon-wrap" style="background:rgba(99,102,241,.12);">⏰</div><span class="app-icon-label">Clock/Alarm</span></button>
-      <button class="app-icon-btn" onclick="launchApp('settings')"><div class="app-icon-wrap" style="background:rgba(100,116,139,.12);">⚙️</div><span class="app-icon-label">Settings</span></button>
-      <button class="app-icon-btn" onclick="launchApp('photos')"><div class="app-icon-wrap" style="background:rgba(168,85,247,.12);">🖼️</div><span class="app-icon-label">Photos</span></button>
-      <button class="app-icon-btn" onclick="launchApp('calendar')"><div class="app-icon-wrap" style="background:rgba(59,130,246,.12);">📅</div><span class="app-icon-label">Calendar</span></button>
-      <button class="app-icon-btn" onclick="launchApp('calculator')"><div class="app-icon-wrap" style="background:rgba(16,185,129,.12);">🔢</div><span class="app-icon-label">Calculator</span></button>
-      <button class="app-icon-btn" onclick="launchApp('contacts')"><div class="app-icon-wrap" style="background:rgba(14,165,233,.12);">👤</div><span class="app-icon-label">Contacts</span></button>
-      <button class="app-icon-btn" onclick="launchApp('phone')"><div class="app-icon-wrap" style="background:rgba(34,197,94,.12);">📞</div><span class="app-icon-label">Phone</span></button>
-      <button class="app-icon-btn" onclick="launchApp('messages')"><div class="app-icon-wrap" style="background:rgba(59,130,246,.12);">💬</div><span class="app-icon-label">Messages</span></button>
-      <button class="app-icon-btn" onclick="launchApp('drive')"><div class="app-icon-wrap" style="background:rgba(245,158,11,.12);">☁️</div><span class="app-icon-label">Drive</span></button>
+    <p style="font-size:10px;font-weight:700;color:#1E293B;text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;">Installed Apps</p>
+    <div id="appGridFull" class="app-grid">
+      <button class="app-btn" onclick="launch('youtube')" data-name="youtube"><div class="app-ic" style="background:rgba(239,68,68,.1);">▶️</div><span class="app-lbl">YouTube</span></button>
+      <button class="app-btn" onclick="launch('whatsapp')" data-name="whatsapp"><div class="app-ic" style="background:rgba(37,211,102,.1);">💬</div><span class="app-lbl">WhatsApp</span></button>
+      <button class="app-btn" onclick="launch('gmail')" data-name="gmail"><div class="app-ic" style="background:rgba(239,68,68,.1);">📧</div><span class="app-lbl">Gmail</span></button>
+      <button class="app-btn" onclick="launch('maps')" data-name="maps"><div class="app-ic" style="background:rgba(34,197,94,.1);">🗺️</div><span class="app-lbl">Maps</span></button>
+      <button class="app-btn" onclick="launch('chrome')" data-name="chrome"><div class="app-ic" style="background:rgba(251,191,36,.1);">🌐</div><span class="app-lbl">Chrome</span></button>
+      <button class="app-btn" onclick="launch('camera')" data-name="camera"><div class="app-ic" style="background:rgba(245,158,11,.1);">📷</div><span class="app-lbl">Camera</span></button>
+      <button class="app-btn" onclick="launch('alarm')" data-name="alarm clock"><div class="app-ic" style="background:rgba(99,102,241,.1);">⏰</div><span class="app-lbl">Clock/Alarm</span></button>
+      <button class="app-btn" onclick="launch('settings')" data-name="settings"><div class="app-ic" style="background:rgba(100,116,139,.1);">⚙️</div><span class="app-lbl">Settings</span></button>
+      <button class="app-btn" onclick="launch('photos')" data-name="photos gallery"><div class="app-ic" style="background:rgba(168,85,247,.1);">🖼️</div><span class="app-lbl">Photos</span></button>
+      <button class="app-btn" onclick="launch('calendar')" data-name="calendar"><div class="app-ic" style="background:rgba(59,130,246,.1);">📅</div><span class="app-lbl">Calendar</span></button>
+      <button class="app-btn" onclick="launch('calculator')" data-name="calculator"><div class="app-ic" style="background:rgba(16,185,129,.1);">🔢</div><span class="app-lbl">Calculator</span></button>
+      <button class="app-btn" onclick="launch('contacts')" data-name="contacts"><div class="app-ic" style="background:rgba(14,165,233,.1);">👤</div><span class="app-lbl">Contacts</span></button>
+      <button class="app-btn" onclick="launch('playstore')" data-name="play store"><div class="app-ic" style="background:rgba(59,130,246,.1);">🏪</div><span class="app-lbl">Play Store</span></button>
+      <button class="app-btn" onclick="launch('drive')" data-name="drive"><div class="app-ic" style="background:rgba(245,158,11,.1);">☁️</div><span class="app-lbl">Drive</span></button>
+      <button class="app-btn" onclick="launch('instagram')" data-name="instagram"><div class="app-ic" style="background:rgba(236,72,153,.1);">📸</div><span class="app-lbl">Instagram</span></button>
+      <button class="app-btn" onclick="launch('telegram')" data-name="telegram"><div class="app-ic" style="background:rgba(59,130,246,.1);">✈️</div><span class="app-lbl">Telegram</span></button>
     </div>
     <!-- Custom app by name -->
-    <div style="margin-top:20px;" class="card">
-      <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:10px;">Open Any App by Package Name</p>
+    <div style="margin-top:18px;" class="card">
+      <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:10px;">Open any app by name</p>
       <div style="display:flex;gap:8px;">
-        <input id="custom-app-input" class="input-field" style="flex:1;background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:11px 14px;" type="text" placeholder="e.g. Instagram, Spotify..." onkeydown="if(event.key==='Enter')launchCustomApp()"/>
-        <button onclick="launchCustomApp()" style="padding:11px 14px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;">Open</button>
+        <input id="customApp" class="inp" style="flex:1;" type="text" placeholder="e.g. Spotify, Netflix..." onkeydown="if(event.key==='Enter')launchCustom()"/>
+        <button onclick="launchCustom()" style="padding:11px 14px;border-radius:12px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;">Open</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ██ S22: EMAIL SETTINGS ██ -->
-<div id="screen-22" class="screen" style="background:#070D1B;">
-  <div class="top-bar" style="border-bottom:1px solid #0D1B3A;"><button onclick="goBack()" style="color:#64748B;font-size:13px;background:none;">← Back</button><span style="font-size:15px;font-weight:700;">Email Settings</span><span></span></div>
+<!-- ████ S22 EMAIL SETTINGS ████ -->
+<div id="s22" class="screen" style="background:#070D1B;">
+  <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Email Settings</span><span style="width:40px;"></span></div>
   <div class="scroll-body" style="padding:16px;padding-bottom:80px;">
-    <div class="card" style="margin-bottom:16px;text-align:center;padding:24px;">
-      <div style="font-size:44px;margin-bottom:10px;">📧</div>
-      <p style="font-size:16px;font-weight:700;margin-bottom:6px;">Connect Your Email</p>
-      <p style="font-size:12px;color:#64748B;line-height:1.5;margin-bottom:16px;">ROBO will read new emails and suggest smart replies. You review and approve before sending.</p>
-      <div id="email-connected-state" style="display:none;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px;"><span class="dot dot-green"></span><p style="font-size:14px;font-weight:700;color:#22C55E;">Email Connected</p></div>
-        <p id="email-connected-addr" style="font-size:12px;color:#64748B;"></p>
+    <div class="card" style="margin-bottom:14px;text-align:center;padding:22px;">
+      <div style="font-size:42px;margin-bottom:8px;">📧</div>
+      <p style="font-size:15px;font-weight:700;margin-bottom:5px;">Connect Your Email</p>
+      <p style="font-size:12px;color:#334155;line-height:1.5;margin-bottom:14px;">ROBO reads incoming emails and suggests AI replies. You approve before sending.</p>
+      <div id="emConState" style="display:none;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:7px;"><span class="dot dot-g"></span><p style="font-size:14px;font-weight:700;color:#22C55E;">Connected</p></div>
+        <p id="emConAddr" style="font-size:12px;color:#334155;margin-top:2px;"></p>
       </div>
-      <div id="email-form-state">
-        <div style="position:relative;margin-bottom:10px;text-align:left;">
-          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;">📧</span>
-          <input id="email-setup-input" class="input-field" style="background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:12px 14px 12px 40px;" type="email" placeholder="your@gmail.com"/>
-        </div>
-        <button onclick="saveEmail()" class="btn-primary">Connect Email →</button>
+      <div id="emFormState">
+        <div style="position:relative;margin-bottom:10px;text-align:left;"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;">📧</span><input id="emSetup" class="inp" type="email" placeholder="your@gmail.com" style="padding-left:38px;"/></div>
+        <button onclick="saveEmail()" class="btn-p">Connect Email →</button>
       </div>
     </div>
-    <div class="card" style="margin-bottom:16px;">
-      <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:12px;">Privacy Guarantee</p>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:#22C55E;margin-top:1px;">✓</span><p style="font-size:12px;color:#64748B;line-height:1.5;">ROBO never sends emails automatically</p></div>
-        <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:#22C55E;margin-top:1px;">✓</span><p style="font-size:12px;color:#64748B;line-height:1.5;">Every reply requires your explicit approval</p></div>
-        <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:#22C55E;margin-top:1px;">✓</span><p style="font-size:12px;color:#64748B;line-height:1.5;">Email content is not stored on servers</p></div>
+    <div class="card">
+      <p style="font-size:13px;font-weight:700;color:#CBD5E1;margin-bottom:10px;">Privacy Guarantee</p>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;gap:9px;align-items:flex-start;"><span style="color:#22C55E;">✓</span><p style="font-size:12px;color:#475569;line-height:1.5;">ROBO never sends emails automatically</p></div>
+        <div style="display:flex;gap:9px;align-items:flex-start;"><span style="color:#22C55E;">✓</span><p style="font-size:12px;color:#475569;line-height:1.5;">Every reply requires your explicit approval</p></div>
+        <div style="display:flex;gap:9px;align-items:flex-start;"><span style="color:#22C55E;">✓</span><p style="font-size:12px;color:#475569;line-height:1.5;">Email content is not stored on external servers</p></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ██ CONTACT PICKER MODAL ██ -->
-<div id="contact-picker-modal" class="modal-overlay">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <p id="picker-title" style="font-size:16px;font-weight:700;">Select Contacts</p>
-      <button onclick="closeContactPicker()" style="color:#64748B;font-size:22px;background:none;line-height:1;">✕</button>
+<!-- ████ S23 HISTORY ████ -->
+<div id="s23" class="screen" style="background:#070D1B;">
+  <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0D1B3A;flex-shrink:0;"><button onclick="GB()" style="color:#475569;font-size:13px;">← Back</button><span style="font-size:15px;font-weight:700;">Task History</span><button onclick="clearHist()" style="font-size:11px;color:#475569;">Clear all</button></div>
+  <div id="histList" class="scroll-body" style="padding:16px;padding-bottom:80px;display:flex;flex-direction:column;gap:4px;"></div>
+</div>
+
+<!-- ████ CONTACT PICKER MODAL ████ -->
+<div id="pickerModal" class="modal">
+  <div class="modal-box">
+    <div class="mhandle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <p id="pickerTitle" style="font-size:15px;font-weight:700;">Select Contacts</p>
+      <button onclick="closePicker()" style="font-size:22px;color:#475569;line-height:1;">✕</button>
     </div>
-    <div style="position:relative;margin-bottom:12px;">
+    <div style="position:relative;margin-bottom:10px;">
       <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);">🔍</span>
-      <input id="contact-search" class="input-field" style="background:#0B1327;border:1px solid #1D2B4A;border-radius:12px;padding:10px 14px 10px 38px;width:100%;" placeholder="Search contacts..." oninput="filterContactPicker(this.value)"/>
+      <input id="pickerSearch" class="inp" style="padding-left:36px;width:100%;" placeholder="Search..." oninput="filterPicker(this.value)"/>
     </div>
-    <div id="contact-list" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px;max-height:50vh;"></div>
-    <button onclick="confirmContactPicker()" class="btn-primary" style="margin-top:14px;flex-shrink:0;">Confirm Selection →</button>
+    <div id="pickerList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:3px;max-height:52vh;"></div>
+    <button onclick="confirmPicker()" class="btn-p" style="margin-top:12px;flex-shrink:0;">Confirm Selection →</button>
   </div>
 </div>
 
-<!-- ██ BOTTOM NAV ██ -->
+<!-- ████ BOTTOM NAV ████ -->
 <nav id="bottom-nav">
   <div class="bnav">
-    <button class="bnav-btn active" id="bnav-home" onclick="goBNav(7,'home')"><span class="icon">🏠</span>Home</button>
-    <button class="bnav-btn" id="bnav-chat" onclick="goBNav(9,'chat')"><span class="icon">💬</span>Chat</button>
-    <button class="bnav-btn" id="bnav-voice" onclick="goBNav(8,'voice')"><span class="icon" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:0;">🎤</span>Voice</button>
-    <button class="bnav-btn" id="bnav-devices" onclick="goBNav(15,'devices')"><span class="icon">📱</span>Devices</button>
-    <button class="bnav-btn" id="bnav-settings" onclick="goBNav(16,'settings')"><span class="icon">⚙️</span>Settings</button>
+    <button class="bnav-btn active" id="bn-home" onclick="bnav(7,'home')"><span class="bnav-icon">🏠</span>Home</button>
+    <button class="bnav-btn" id="bn-chat" onclick="bnav(9,'chat')"><span class="bnav-icon">💬</span>Chat</button>
+    <button class="bnav-btn" id="bn-voice" onclick="bnav(8,'voice')"><div class="bnav-mic">🎤</div>Voice</button>
+    <button class="bnav-btn" id="bn-devices" onclick="bnav(15,'devices')"><span class="bnav-icon">📱</span>Devices</button>
+    <button class="bnav-btn" id="bn-settings" onclick="bnav(16,'settings')"><span class="bnav-icon">⚙️</span>Settings</button>
   </div>
 </nav>
 
 </div><!-- #app -->
-
 <script>
-// ───── STATE ─────
-var state = {
-  currentScreen: 1,
-  history: [1],
+// ═══════════ STATE ═══════════
+var S = {
+  cur: 1, hist: [1],
   agentOn: true,
-  userName: 'Akshar',
-  userPhone: '',
-  userEmail: '',
-  contacts: [],  // {name, phone, initials, color}
-  callContacts: [],
-  waContacts: [],
-  pickerMode: 'call',
-  pickerSelected: [],
-  voiceLang: 'gu'
+  name: 'Akshar', email: '', phone: '',
+  contacts: [],
+  callCtx: [], waCtx: [],
+  pickerMode: 'call', pickerSel: [],
+  lang: 'gu',
+  taskHistory: []  // [{icon,text,time,status}]
 };
+try { var sv = localStorage.getItem('robo_v2'); if(sv){var p=JSON.parse(sv);Object.assign(S,p);} } catch(e){}
+function save(){ try{ localStorage.setItem('robo_v2', JSON.stringify(S)); }catch(e){} }
 
-// Try restore from localStorage
-try {
-  var saved = localStorage.getItem('robo_state');
-  if (saved) { var s = JSON.parse(saved); Object.assign(state, s); }
-} catch(e) {}
-
-function saveState() {
-  try { localStorage.setItem('robo_state', JSON.stringify(state)); } catch(e) {}
-}
-
-// ───── NAVIGATION ─────
-function goToScreen(n) {
-  var prev = document.getElementById('screen-' + state.currentScreen);
-  if (prev) { prev.classList.remove('active'); }
-
-  if (state.currentScreen !== n) state.history.push(n);
-  state.currentScreen = n;
-
-  var next = document.getElementById('screen-' + n);
-  if (next) { next.classList.add('active'); }
-
+// ═══════════ NAVIGATION ═══════════
+function G(n){
+  var prev = document.getElementById('s'+S.cur);
+  if(prev) prev.classList.remove('active');
+  if(S.cur !== n) S.hist.push(n);
+  S.cur = n;
+  var next = document.getElementById('s'+n);
+  if(next) next.classList.add('active');
   var nav = document.getElementById('bottom-nav');
-  var mainScreens = [7,8,9,15,16,21,22];
-  nav.style.display = mainScreens.indexOf(n) !== -1 ? 'block' : 'none';
-
-  // Update bottom nav active state
-  ['home','chat','voice','devices','settings'].forEach(function(id) {
-    var b = document.getElementById('bnav-' + id);
-    if (b) b.classList.remove('active');
-  });
-  if (n===7) document.getElementById('bnav-home').classList.add('active');
-  if (n===9) document.getElementById('bnav-chat').classList.add('active');
-  if (n===8) document.getElementById('bnav-voice').classList.add('active');
-  if (n===15) document.getElementById('bnav-devices').classList.add('active');
-  if (n===16) document.getElementById('bnav-settings').classList.add('active');
-
+  var mainSc = [7,8,9,15,16,21,22,23];
+  nav.style.display = mainSc.indexOf(n) !== -1 ? 'block' : 'none';
+  ['home','chat','voice','devices','settings'].forEach(function(x){ var b=document.getElementById('bn-'+x); if(b)b.classList.remove('active'); });
+  if(n===7)document.getElementById('bn-home').classList.add('active');
+  if(n===9)document.getElementById('bn-chat').classList.add('active');
+  if(n===8)document.getElementById('bn-voice').classList.add('active');
+  if(n===15)document.getElementById('bn-devices').classList.add('active');
+  if(n===16)document.getElementById('bn-settings').classList.add('active');
+  if(n===7) refreshDash();
+  if(n===23) renderHistory();
   window.scrollTo(0,0);
-  refreshDashboard();
 }
+function GB(){ if(S.hist.length>1){S.hist.pop();G(S.hist[S.hist.length-1]);}else{G(7);} }
+function bnav(n,id){ G(n); }
 
-function goBack() {
-  if (state.history.length > 1) {
-    state.history.pop();
-    goToScreen(state.history[state.history.length - 1]);
+// ═══════════ AUTH ═══════════
+function authTab(t){
+  document.getElementById('fl').style.display = t==='l'?'flex':'none';
+  document.getElementById('fr').style.display = t==='r'?'flex':'none';
+  document.getElementById('tl').style.cssText = t==='l'?'flex:1;padding:9px;border-radius:10px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;':'flex:1;padding:9px;border-radius:10px;color:#475569;font-size:13px;border:none;cursor:pointer;background:none;';
+  document.getElementById('tr').style.cssText = t==='r'?'flex:1;padding:9px;border-radius:10px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;':'flex:1;padding:9px;border-radius:10px;color:#475569;font-size:13px;border:none;cursor:pointer;background:none;';
+}
+function doLogin(){
+  var e=document.getElementById('le').value.trim(), p=document.getElementById('lp').value.trim();
+  if(!e||!p){showT('Enter email and password.');return;}
+  S.name=e.split('@')[0]; S.email=e; save(); showT('Welcome back!'); G(4);
+}
+function doReg(){
+  var n=document.getElementById('rn').value.trim(), e=document.getElementById('re').value.trim(), p=document.getElementById('rp').value.trim();
+  if(!n||!e||!p){showT('Fill all fields.');return;}
+  if(p.length<8){showT('Password needs 8+ chars.');return;}
+  S.name=n; S.email=e; save(); showT('Account created! Welcome, '+n+'!'); G(4);
+}
+function doLogout(){ S.email=''; S.name='User'; save(); G(3); }
+
+// ═══════════ CONTACTS ═══════════
+var COLORS=['#22D3EE','#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444','#06B6D4'];
+function loadContacts(){
+  showT('Loading your contacts...');
+  if(window.AndroidBridge){
+    // Try async first
+    try{ AndroidBridge.loadContacts(); }catch(e){}
+    // Also try sync
+    try{
+      var raw = AndroidBridge.getContacts();
+      if(raw && raw.length > 2) processContacts(JSON.parse(raw));
+    }catch(e){ useDemoContacts(); }
   } else {
-    goToScreen(7);
+    setTimeout(useDemoContacts, 600);
   }
 }
-
-function goBNav(n, id) { goToScreen(n); }
-
-// ───── AUTH ─────
-function switchAuthTab(tab) {
-  document.getElementById('auth-login').style.display = tab==='login' ? 'flex' : 'none';
-  document.getElementById('auth-register').style.display = tab==='register' ? 'flex' : 'none';
-  document.getElementById('tab-login').style.cssText = tab==='login'
-    ? 'flex:1;padding:9px;border-radius:10px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;border:none;'
-    : 'flex:1;padding:9px;border-radius:10px;background:none;color:#475569;font-size:13px;border:none;';
-  document.getElementById('tab-reg').style.cssText = tab==='register'
-    ? 'flex:1;padding:9px;border-radius:10px;background:linear-gradient(135deg,#2563EB,#06B6D4);color:#fff;font-size:13px;font-weight:700;border:none;'
-    : 'flex:1;padding:9px;border-radius:10px;background:none;color:#475569;font-size:13px;border:none;';
-}
-
-function doLogin() {
-  var email = document.getElementById('login-email').value.trim();
-  var pass = document.getElementById('login-pass').value.trim();
-  if (!email || !pass) { showToast('Please enter email and password.'); return; }
-  state.userEmail = email;
-  state.userName = email.split('@')[0];
-  saveState();
-  showToast('Signed in successfully!');
-  goToScreen(4);
-}
-
-function doRegister() {
-  var name = document.getElementById('reg-name').value.trim();
-  var email = document.getElementById('reg-email').value.trim();
-  var pass = document.getElementById('reg-pass').value.trim();
-  if (!name || !email || !pass) { showToast('Please fill all fields.'); return; }
-  if (pass.length < 8) { showToast('Password must be at least 8 characters.'); return; }
-  state.userName = name;
-  state.userEmail = email;
-  saveState();
-  showToast('Account created! Welcome, ' + name + '!');
-  goToScreen(4);
-}
-
-function doLogout() {
-  if (window.AndroidBridge) AndroidBridge.showToast('Signed out.');
-  state.userEmail = '';
-  state.userName = 'User';
-  saveState();
-  goToScreen(3);
-}
-
-// ───── CONTACTS ─────
-var COLORS = ['#22D3EE','#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444'];
-
-function loadRealContacts() {
-  showToast('Loading contacts...');
-  if (window.AndroidBridge && AndroidBridge.getContacts) {
-    var raw = AndroidBridge.getContacts();
-    try { processContacts(JSON.parse(raw)); } catch(e) { useDemoContacts(); }
-  } else {
-    // In browser / no bridge — demo data
-    setTimeout(useDemoContacts, 800);
-  }
-}
-
-function useDemoContacts() {
-  // Demo contacts — user should see their own after granting permission
+function useDemoContacts(){
   processContacts([
-    {name:'Mummy', phone:'+919876500001'},
-    {name:'Papa', phone:'+919876500002'},
-    {name:'Rahul', phone:'+919876500003'},
-    {name:'Priya', phone:'+919876500004'},
-    {name:'Boss', phone:'+919876500005'},
-    {name:'Office', phone:'+919876500006'},
-    {name:'Doctor', phone:'+919876500007'},
-    {name:'Ravi', phone:'+919876500008'}
+    {name:'Mummy',phone:'+919876500001'},{name:'Papa',phone:'+919876500002'},
+    {name:'Rahul',phone:'+919876500003'},{name:'Priya',phone:'+919876500004'},
+    {name:'Boss',phone:'+919876500005'},{name:'Office',phone:'+919876500006'},
+    {name:'Doctor',phone:'+919876500007'},{name:'Ravi',phone:'+919876500008'},
+    {name:'Anita',phone:'+919876500009'},{name:'Suresh',phone:'+919876500010'}
   ]);
 }
-
-function processContacts(list) {
-  state.contacts = list.map(function(c, i) {
-    var initials = c.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
-    return { name: c.name, phone: c.phone, initials: initials, color: COLORS[i % COLORS.length] };
+function processContacts(list){
+  S.contacts = list.map(function(c,i){
+    var ini=c.name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
+    return {name:c.name, phone:c.phone, ini:ini, color:COLORS[i%COLORS.length]};
   });
-  saveState();
-  document.getElementById('contacts-badge').textContent = state.contacts.length + ' loaded';
-  document.getElementById('contacts-badge').className = 'badge badge-green';
-  showToast('Loaded ' + state.contacts.length + ' contacts!');
-  if (window.AndroidBridge) AndroidBridge.showToast('Contacts loaded: ' + state.contacts.length);
+  save();
+  var badge = document.getElementById('cbadge');
+  if(badge){badge.textContent=S.contacts.length+' loaded';badge.className='badge b-green';}
+  showT('Loaded '+S.contacts.length+' contacts!');
 }
-
-// Callback from Android native contacts load
-window.onContactsLoaded = function(jsonStr) {
-  try { processContacts(JSON.parse(jsonStr)); } catch(e) {}
+// Called by Android when async contacts load completes
+window.onContactsLoaded = function(jsonStr){
+  try{ processContacts(JSON.parse(jsonStr)); }catch(e){}
 };
 
-function openContactPicker(mode) {
-  if (state.contacts.length === 0) { showToast('Please load contacts first.'); return; }
-  state.pickerMode = mode;
-  state.pickerSelected = mode==='call'
-    ? state.callContacts.map(function(c){return c.phone;})
-    : state.waContacts.map(function(c){return c.phone;});
-  document.getElementById('picker-title').textContent = mode==='call' ? 'Select Calling Contacts' : 'Select WhatsApp Contacts';
-  renderContactPicker('');
-  document.getElementById('contact-picker-modal').classList.add('show');
+// ═══════════ PICKER ═══════════
+function openPicker(mode){
+  if(S.contacts.length===0){showT('Tap "Load My Contacts" first.');return;}
+  S.pickerMode=mode;
+  S.pickerSel=(mode==='call'?S.callCtx:S.waCtx).map(function(c){return c.phone;});
+  document.getElementById('pickerTitle').textContent = mode==='call'?'Select Calling Contacts':'Select WhatsApp Contacts';
+  renderPicker('');
+  document.getElementById('pickerModal').classList.add('show');
 }
-
-function openGroupPicker() {
-  showToast('WhatsApp Groups — coming after notification access is granted.');
-}
-
-function renderContactPicker(filter) {
-  var list = document.getElementById('contact-list');
-  list.innerHTML = '';
-  state.contacts.filter(function(c) {
-    return !filter || c.name.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
-  }).forEach(function(c) {
-    var sel = state.pickerSelected.indexOf(c.phone) !== -1;
-    var div = document.createElement('div');
-    div.className = 'contact-item' + (sel ? ' selected' : '');
-    div.innerHTML =
-      '<div class="avatar" style="background:' + c.color + '20;color:' + c.color + ';border:1.5px solid ' + c.color + '40;">' + c.initials + '</div>' +
-      '<div style="flex:1;"><p style="font-size:14px;font-weight:600;color:#CBD5E1;">' + c.name + '</p><p style="font-size:11px;color:#475569;">' + c.phone + '</p></div>' +
-      (sel ? '<span style="font-size:20px;color:#22D3EE;">✓</span>' : '<span style="font-size:18px;color:#334155;">○</span>');
-    div.onclick = function() {
-      var idx = state.pickerSelected.indexOf(c.phone);
-      if (idx === -1) state.pickerSelected.push(c.phone);
-      else state.pickerSelected.splice(idx, 1);
-      renderContactPicker(document.getElementById('contact-search').value);
+function renderPicker(filter){
+  var list=document.getElementById('pickerList'); list.innerHTML='';
+  S.contacts.filter(function(c){ return !filter||c.name.toLowerCase().indexOf(filter.toLowerCase())!==-1; }).forEach(function(c){
+    var sel=S.pickerSel.indexOf(c.phone)!==-1;
+    var d=document.createElement('div');
+    d.className='ci'+(sel?' sel':'');
+    d.innerHTML='<div class="av" style="background:'+c.color+'18;color:'+c.color+';border:1.5px solid '+c.color+'30;">'+c.ini+'</div>'+
+      '<div style="flex:1;"><p style="font-size:14px;font-weight:600;color:#CBD5E1;">'+c.name+'</p><p style="font-size:11px;color:#334155;">'+c.phone+'</p></div>'+
+      (sel?'<span style="font-size:20px;color:#22D3EE;">✓</span>':'<span style="font-size:18px;color:#1E293B;">○</span>');
+    d.onclick=function(){
+      var idx=S.pickerSel.indexOf(c.phone);
+      if(idx===-1)S.pickerSel.push(c.phone); else S.pickerSel.splice(idx,1);
+      renderPicker(document.getElementById('pickerSearch').value);
     };
-    list.appendChild(div);
+    list.appendChild(d);
   });
 }
-
-function filterContactPicker(val) { renderContactPicker(val); }
-
-function confirmContactPicker() {
-  var selected = state.contacts.filter(function(c) {
-    return state.pickerSelected.indexOf(c.phone) !== -1;
-  });
-  if (state.pickerMode === 'call') {
-    state.callContacts = selected;
-    document.getElementById('call-count-badge').textContent = selected.length + ' selected';
-    renderSelectedChips('call-selected-list', selected, 'call');
-    if (selected.length > 0) {
-      document.getElementById('quick-call-name').textContent = selected[0].name;
-    }
+function filterPicker(v){ renderPicker(v); }
+function confirmPicker(){
+  var sel=S.contacts.filter(function(c){return S.pickerSel.indexOf(c.phone)!==-1;});
+  if(S.pickerMode==='call'){
+    S.callCtx=sel;
+    var b=document.getElementById('callBadge'); if(b){b.textContent=sel.length+' selected';b.className='badge b-green';}
+    renderChips('callChips',sel);
+    var q=document.getElementById('qcName'); if(q&&sel.length)q.textContent=sel[0].name;
   } else {
-    state.waContacts = selected;
-    document.getElementById('wa-count-badge').textContent = selected.length + ' selected';
-    renderSelectedChips('wa-selected-list', selected, 'wa');
-    if (selected.length > 0) {
-      document.getElementById('quick-wa-name').textContent = selected[0].name;
-    }
+    S.waCtx=sel;
+    var b=document.getElementById('waBadge'); if(b){b.textContent=sel.length+' selected';b.className='badge b-green';}
+    renderChips('waChips',sel);
+    var q=document.getElementById('qwName'); if(q&&sel.length)q.textContent=sel[0].name;
   }
-  saveState();
-  closeContactPicker();
-  showToast('Saved ' + selected.length + ' contacts!');
+  save(); closePicker(); showT('Saved '+sel.length+' contacts!');
 }
-
-function renderSelectedChips(containerId, contacts, mode) {
-  var c = document.getElementById(containerId);
-  c.innerHTML = '';
-  contacts.forEach(function(contact) {
-    var chip = document.createElement('div');
-    chip.style.cssText = 'background:#10192E;border:1px solid #1D2B4A;border-radius:8px;padding:4px 10px;font-size:11px;color:#CBD5E1;display:flex;align-items:center;gap:5px;';
-    chip.innerHTML = contact.initials + ' ' + contact.name;
+function renderChips(id,contacts){
+  var c=document.getElementById(id); if(!c)return; c.innerHTML='';
+  contacts.forEach(function(ct){
+    var chip=document.createElement('div');
+    chip.style.cssText='background:#10192E;border:1px solid '+ct.color+'40;border-radius:8px;padding:4px 9px;font-size:11px;color:'+ct.color+';';
+    chip.textContent=ct.name;
     c.appendChild(chip);
   });
 }
+function closePicker(){ document.getElementById('pickerModal').classList.remove('show'); document.getElementById('pickerSearch').value=''; }
 
-function closeContactPicker() {
-  document.getElementById('contact-picker-modal').classList.remove('show');
-  document.getElementById('contact-search').value = '';
+function saveSetup(){
+  S.phone=document.getElementById('phIn').value.trim();
+  var em=document.getElementById('emIn').value.trim(); if(em)S.email=em;
+  save(); showT('Setup saved!'); G(7);
+}
+function saveEmail(){
+  var e=document.getElementById('emSetup').value.trim();
+  if(!e||e.indexOf('@')===-1){showT('Enter a valid email.');return;}
+  S.email=e; save();
+  document.getElementById('emFormState').style.display='none';
+  document.getElementById('emConState').style.display='block';
+  document.getElementById('emConAddr').textContent=e;
+  var es=document.getElementById('emStat'); if(es){es.textContent='Connected';es.style.color='#22C55E';}
+  showT('Email connected!');
 }
 
-function saveSetupAndContinue() {
-  state.userPhone = document.getElementById('phone-input').value.trim();
-  var email = document.getElementById('email-input').value.trim();
-  if (email) state.userEmail = email;
-  saveState();
-  showToast('Setup saved!');
-  goToScreen(7);
+// ═══════════ DASHBOARD REFRESH ═══════════
+function refreshDash(){
+  var h=new Date().getHours(), g=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';
+  var gr=document.getElementById('greet'); if(gr)gr.textContent=g+', '+(S.name||'User')+' \uD83D\uDC4B';
+  var es=document.getElementById('emStat');
+  if(es&&S.email){es.textContent='Connected';es.style.color='#22C55E';}
+  var qcn=document.getElementById('qcName'); if(qcn&&S.callCtx.length)qcn.textContent=S.callCtx[0].name;
+  var qwn=document.getElementById('qwName'); if(qwn&&S.waCtx.length)qwn.textContent=S.waCtx[0].name;
+  renderChips('callChips',S.callCtx); renderChips('waChips',S.waCtx);
+  if(S.callCtx.length){var b=document.getElementById('callBadge');if(b){b.textContent=S.callCtx.length+' selected';b.className='badge b-green';}}
+  if(S.waCtx.length){var b=document.getElementById('waBadge');if(b){b.textContent=S.waCtx.length+' selected';b.className='badge b-green';}}
+  renderHistPreview();
 }
-
-// ───── EMAIL ─────
-function saveEmail() {
-  var e = document.getElementById('email-setup-input').value.trim();
-  if (!e || e.indexOf('@') === -1) { showToast('Please enter a valid email.'); return; }
-  state.userEmail = e;
-  saveState();
-  document.getElementById('email-form-state').style.display = 'none';
-  document.getElementById('email-connected-state').style.display = 'block';
-  document.getElementById('email-connected-addr').textContent = e;
-  document.getElementById('email-status-dash').textContent = 'Connected';
-  document.getElementById('email-status-dash').style.color = '#22C55E';
-  showToast('Email connected!');
-}
-
-// ───── DASHBOARD ─────
-function refreshDashboard() {
-  var greet = document.getElementById('dash-greeting');
-  if (greet) {
-    var h = new Date().getHours();
-    var g = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
-    greet.textContent = g + ', ' + (state.userName || 'User') + ' \uD83D\uDC4B';
-  }
-  var emailDash = document.getElementById('email-status-dash');
-  if (emailDash && state.userEmail) {
-    emailDash.textContent = 'Connected';
-    emailDash.style.color = '#22C55E';
-  }
-  if (state.callContacts.length > 0) {
-    var n = document.getElementById('quick-call-name');
-    if (n) n.textContent = state.callContacts[0].name;
-  }
-  if (state.waContacts.length > 0) {
-    var wn = document.getElementById('quick-wa-name');
-    if (wn) wn.textContent = state.waContacts[0].name;
-  }
-  // Repopulate S4 chips if needed
-  renderSelectedChips('call-selected-list', state.callContacts, 'call');
-  renderSelectedChips('wa-selected-list', state.waContacts, 'wa');
-  if (state.callContacts.length > 0) {
-    document.getElementById('call-count-badge').textContent = state.callContacts.length + ' selected';
-  }
-  if (state.waContacts.length > 0) {
-    document.getElementById('wa-count-badge').textContent = state.waContacts.length + ' selected';
-  }
-  if (state.userEmail) {
-    document.getElementById('email-setup-input') && (document.getElementById('email-setup-input').value = state.userEmail);
-    document.getElementById('email-input') && (document.getElementById('email-input').value = state.userEmail);
-    document.getElementById('email-connected-addr') && (document.getElementById('email-connected-addr').textContent = state.userEmail);
-  }
-}
-
-// ───── AGENT TOGGLE ─────
-function toggleAgent() {
-  state.agentOn = !state.agentOn;
-  var lbl = document.getElementById('agent-label');
-  var dot = document.getElementById('agent-dot');
-  var btn = document.getElementById('agent-toggle');
-  if (state.agentOn) {
-    lbl.textContent = 'Agent ON';
-    dot.className = 'dot dot-green';
-    btn.style.background = 'rgba(34,211,238,.1)';
-    btn.style.borderColor = 'rgba(34,211,238,.3)';
-    btn.style.color = '#22D3EE';
+function toggleAgent(){
+  S.agentOn=!S.agentOn;
+  var lbl=document.getElementById('albl'),dot=document.getElementById('adot'),btn=document.getElementById('atoggle');
+  if(S.agentOn){
+    lbl.textContent='Agent ON';dot.className='dot dot-g';
+    btn.style.cssText='display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#22D3EE;font-size:11px;font-weight:700;';
   } else {
-    lbl.textContent = 'Agent OFF';
-    dot.className = 'dot dot-red';
-    btn.style.background = 'rgba(239,68,68,.1)';
-    btn.style.borderColor = 'rgba(239,68,68,.3)';
-    btn.style.color = '#F87171';
+    lbl.textContent='Agent OFF';dot.className='dot dot-r';
+    btn.style.cssText='display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#F87171;font-size:11px;font-weight:700;';
   }
-  if (window.AndroidBridge) AndroidBridge.showToast('ROBO Agent ' + (state.agentOn ? 'Active' : 'Paused'));
+  if(window.AndroidBridge)AndroidBridge.showToast('ROBO '+(S.agentOn?'Active':'Paused'));
 }
 
-// ───── VOICE ─────
-function startVoice() {
-  goToScreen(8);
-  if (window.AndroidBridge) AndroidBridge.startVoice();
+// ═══════════ HISTORY ═══════════
+function addHist(icon,text,status){
+  var now=new Date();
+  var t=now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
+  S.taskHistory.unshift({icon:icon,text:text,time:t,status:status||'Done'});
+  if(S.taskHistory.length>50)S.taskHistory.pop();
+  save(); renderHistPreview();
 }
-
-function triggerVoice() {
-  var stateEl = document.getElementById('voice-state');
-  var trans = document.getElementById('voice-transcript');
-  stateEl.textContent = 'Listening... Speak now';
-  trans.textContent = '...';
-  if (window.AndroidBridge) {
-    AndroidBridge.startVoice();
-  } else {
-    setTimeout(function() {
-      stateEl.textContent = 'Tap mic to speak';
-      trans.textContent = 'Waiting for your command... (Voice requires device microphone)';
-    }, 2000);
-  }
+function renderHistPreview(){
+  var c=document.getElementById('histPreview'); if(!c)return;
+  if(S.taskHistory.length===0){c.innerHTML='<p style="font-size:12px;color:#334155;text-align:center;padding:14px 0;">No tasks yet. Try a voice command!</p>';return;}
+  c.innerHTML=S.taskHistory.slice(0,4).map(function(h){
+    return '<div class="hi"><span style="font-size:20px;">'+h.icon+'</span><div style="flex:1;"><p style="font-size:13px;font-weight:600;color:#CBD5E1;">'+h.text+'</p><p style="font-size:11px;color:#334155;">'+h.time+'</p></div><span class="badge b-green">'+h.status+'</span></div>';
+  }).join('');
 }
-
-function setVoiceLang(lang) {
-  state.voiceLang = lang;
-  ['gu','hi','en'].forEach(function(l) {
-    var b = document.getElementById('lang-' + l);
-    if (b) {
-      b.style.background = l===lang ? 'rgba(34,211,238,.15)' : '#10192E';
-      b.style.borderColor = l===lang ? 'rgba(34,211,238,.4)' : '#1D2B4A';
-      b.style.color = l===lang ? '#22D3EE' : '#94A3B8';
-    }
-  });
-  if (window.AndroidBridge) AndroidBridge.showToast('Voice language: ' + lang.toUpperCase());
+function renderHistory(){
+  var c=document.getElementById('histList'); if(!c)return;
+  if(S.taskHistory.length===0){c.innerHTML='<p style="font-size:13px;color:#334155;text-align:center;padding:30px 0;">No history yet.</p>';return;}
+  c.innerHTML=S.taskHistory.map(function(h){
+    return '<div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:8px;"><span style="font-size:22px;">'+h.icon+'</span><div style="flex:1;"><p style="font-size:13px;font-weight:600;color:#CBD5E1;">'+h.text+'</p><p style="font-size:11px;color:#334155;">'+h.time+'</p></div><span class="badge b-green">'+h.status+'</span></div>';
+  }).join('');
 }
+function clearHist(){ S.taskHistory=[]; save(); renderHistory(); renderHistPreview(); }
 
-function sendVoiceText() {
-  var input = document.getElementById('voice-text-input');
-  var text = input ? input.value.trim() : '';
-  if (!text) return;
-  processCommand(text);
-  input.value = '';
-}
+// ═══════════ COMMAND PROCESSOR (CORE ENGINE) ═══════════
+var APPS = {
+  'youtube':'com.google.android.youtube','whatsapp':'com.whatsapp',
+  'chrome':'com.android.chrome','gmail':'com.google.android.gm',
+  'maps':'com.google.android.apps.maps','camera':'com.google.android.GoogleCamera',
+  'playstore':'com.android.vending','play store':'com.android.vending',
+  'alarm':'com.google.android.deskclock','clock':'com.google.android.deskclock',
+  'timer':'com.google.android.deskclock','settings':'com.android.settings',
+  'photos':'com.google.android.apps.photos','gallery':'com.google.android.apps.photos',
+  'calendar':'com.google.android.calendar','calculator':'com.google.android.calculator',
+  'contacts':'com.google.android.contacts','phone':'com.google.android.dialer',
+  'dialer':'com.google.android.dialer','messages':'com.google.android.apps.messaging',
+  'drive':'com.google.android.apps.docs','instagram':'com.instagram.android',
+  'spotify':'com.spotify.music','netflix':'com.netflix.mediaclient',
+  'telegram':'org.telegram.messenger','twitter':'com.twitter.android',
+  'facebook':'com.facebook.katana','zoom':'us.zoom.videomeetings',
+  'paytm':'net.one97.paytm','gpay':'com.google.android.apps.nbu.paisa.user',
+  'phonepe':'com.phonepe.app','swiggy':'in.swiggy.android','zomato':'com.application.zomato',
+  'amazon':'com.amazon.mShop.android.shopping','flipkart':'com.flipkart.android',
+  'snapchat':'com.snapchat.android','linkedin':'com.linkedin.android',
+  'meet':'com.google.android.apps.meetings','teams':'com.microsoft.teams'
+};
 
-// ───── COMMAND PROCESSOR ─────
-function processCommand(text) {
+// Find a contact by matching any word in the spoken text
+function findContact(text, pool){
   var lower = text.toLowerCase();
-  var transcript = document.getElementById('voice-transcript');
-  if (transcript) transcript.textContent = '"' + text + '"';
-
-  // Call intent
-  if (lower.indexOf('call') !== -1 || lower.indexOf('bol') !== -1 || lower.indexOf('phone') !== -1) {
-    var contact = findContact(lower, state.callContacts.length > 0 ? state.callContacts : state.contacts);
-    if (contact) {
-      if (window.AndroidBridge) AndroidBridge.dialPhone(contact.phone);
-      else showToast('Calling ' + contact.name + ' at ' + contact.phone);
-      if (transcript) transcript.textContent = 'Calling ' + contact.name + '...';
-      return;
+  if(!pool||!pool.length) pool = S.contacts;
+  // Exact name match first
+  for(var i=0;i<pool.length;i++){
+    if(lower.indexOf(pool[i].name.toLowerCase())!==-1) return pool[i];
+  }
+  // Word-by-word match
+  var words = lower.split(/\s+/);
+  for(var w=0;w<words.length;w++){
+    if(words[w].length<3) continue;
+    for(var i=0;i<pool.length;i++){
+      if(pool[i].name.toLowerCase().indexOf(words[w])!==-1) return pool[i];
     }
-  }
-
-  // WhatsApp intent
-  if (lower.indexOf('whatsapp') !== -1 || lower.indexOf('message') !== -1 || lower.indexOf('msg') !== -1) {
-    var wcontact = findContact(lower, state.waContacts.length > 0 ? state.waContacts : state.contacts);
-    if (wcontact) {
-      if (window.AndroidBridge) AndroidBridge.sendWhatsApp(wcontact.phone, 'Hello ' + wcontact.name + '!');
-      else showToast('Opening WhatsApp for ' + wcontact.name);
-      if (transcript) transcript.textContent = 'Opening WhatsApp for ' + wcontact.name + '...';
-      return;
-    }
-  }
-
-  // Open app intent
-  var apps = ['youtube','whatsapp','gmail','maps','chrome','camera','playstore','alarm','settings','photos','calendar','calculator','contacts','phone','messages','instagram','spotify','netflix','telegram','twitter','facebook'];
-  for (var i = 0; i < apps.length; i++) {
-    if (lower.indexOf(apps[i]) !== -1 || lower.indexOf('open ' + apps[i]) !== -1) {
-      launchApp(apps[i]);
-      if (transcript) transcript.textContent = 'Opening ' + apps[i] + '...';
-      return;
-    }
-  }
-
-  // Email intent
-  if (lower.indexOf('email') !== -1 || lower.indexOf('mail') !== -1) {
-    goToScreen(22);
-    return;
-  }
-
-  // Fallback
-  if (transcript) transcript.textContent = 'Understood: "' + text + '". Processing...';
-  if (window.AndroidBridge) AndroidBridge.showToast('ROBO: Processing — ' + text);
-}
-
-function findContact(text, list) {
-  for (var i = 0; i < list.length; i++) {
-    if (text.indexOf(list[i].name.toLowerCase()) !== -1) return list[i];
   }
   return null;
 }
 
-window.onSpeechResult = function(text) {
-  var el = document.getElementById('voice-transcript');
-  if (el) el.textContent = '"' + text + '"';
-  document.getElementById('voice-state').textContent = 'Got it!';
-  processCommand(text);
-};
-window.onSpeechState = function(s) {
-  var el = document.getElementById('voice-state');
-  if (el) el.textContent = s==='listening' ? 'Listening... Speak now' : 'Tap mic to speak';
-};
-
-// ───── QUICK ACTIONS ─────
-function quickCall() {
-  if (state.callContacts.length > 0) {
-    var c = state.callContacts[0];
-    if (window.AndroidBridge) AndroidBridge.dialPhone(c.phone);
-    else showToast('Calling ' + c.name + ' at ' + c.phone);
-  } else {
-    showToast('No call contact selected. Go to Connect Phone → Call Contacts.');
-    setTimeout(function(){ goToScreen(4); }, 1200);
+// Extract message after "—" or "message is" or "saying" from WA command
+function extractMsg(text){
+  var separators = [' — ',' -- ',' message ',' saying ',' that '];
+  for(var i=0;i<separators.length;i++){
+    var idx = text.toLowerCase().indexOf(separators[i]);
+    if(idx!==-1) return text.substring(idx+separators[i].length).trim();
   }
+  return '';
 }
 
-function quickWhatsApp() {
-  if (state.waContacts.length > 0) {
-    var c = state.waContacts[0];
-    if (window.AndroidBridge) AndroidBridge.sendWhatsApp(c.phone, 'Hello ' + c.name + '!');
-    else showToast('Opening WhatsApp for ' + c.name);
-  } else {
-    showToast('No WhatsApp contact selected. Go to Connect Phone → WhatsApp Contacts.');
-    setTimeout(function(){ goToScreen(4); }, 1200);
+function processCmd(text, fromVoice){
+  var lower = text.toLowerCase().trim();
+  if(!lower) return;
+
+  var vt = document.getElementById('vTrans');
+  var va = document.getElementById('vAction');
+  if(vt) vt.textContent = '"'+text+'"';
+
+  // ─── CALL INTENT ───
+  var isCall = /\b(call|ring|phone|dial|bol|bolo|bolav)\b/.test(lower);
+  if(isCall){
+    var pool = S.callCtx.length ? S.callCtx : S.contacts;
+    var ct = findContact(lower, pool);
+    if(ct){
+      var msg = 'Calling '+ct.name+'...';
+      if(vt) vt.textContent = msg;
+      if(va){va.textContent='📞 '+msg;va.style.display='block';}
+      setDashReply('📞 Calling '+ct.name+'...');
+      addHist('📞','Called '+ct.name,'Done');
+      if(window.AndroidBridge) AndroidBridge.callPhone(ct.phone);
+      else showT('Calling '+ct.name+' ('+ct.phone+')');
+      return;
+    } else {
+      var msg='No matching contact found. Set call contacts first.';
+      if(vt)vt.textContent=msg;
+      if(va){va.textContent='⚠️ '+msg;va.style.display='block';}
+      setDashReply(msg);
+      return;
+    }
   }
-}
 
-// ───── APP LAUNCHER ─────
-var APP_MAP = {
-  'youtube': 'com.google.android.youtube',
-  'whatsapp': 'com.whatsapp',
-  'gmail': 'com.google.android.gm',
-  'maps': 'com.google.android.apps.maps',
-  'chrome': 'com.android.chrome',
-  'camera': 'com.google.android.GoogleCamera',
-  'playstore': 'com.android.vending',
-  'alarm': 'com.google.android.deskclock',
-  'clock': 'com.google.android.deskclock',
-  'settings': 'com.android.settings',
-  'photos': 'com.google.android.apps.photos',
-  'calendar': 'com.google.android.calendar',
-  'calculator': 'com.google.android.calculator',
-  'contacts': 'com.google.android.contacts',
-  'phone': 'com.google.android.dialer',
-  'messages': 'com.google.android.apps.messaging',
-  'drive': 'com.google.android.apps.docs',
-  'instagram': 'com.instagram.android',
-  'spotify': 'com.spotify.music',
-  'netflix': 'com.netflix.mediaclient',
-  'telegram': 'org.telegram.messenger',
-  'twitter': 'com.twitter.android',
-  'facebook': 'com.facebook.katana'
-};
-
-function launchApp(appKey) {
-  var key = appKey.toLowerCase().trim();
-  var pkg = APP_MAP[key] || key;
-  if (window.AndroidBridge) {
-    AndroidBridge.openApp(pkg);
-  } else {
-    showToast('Opening ' + appKey + '...');
+  // ─── WHATSAPP INTENT ───
+  var isWA = /\b(whatsapp|wa|watsapp|message|msg|send|chat)\b/.test(lower);
+  if(isWA){
+    var pool = S.waCtx.length ? S.waCtx : S.contacts;
+    var ct = findContact(lower, pool);
+    if(ct){
+      var customMsg = extractMsg(text);
+      var finalMsg = customMsg || ('Hello '+ct.name+'!');
+      var msg='Opening WhatsApp for '+ct.name+'...';
+      if(vt)vt.textContent=msg;
+      if(va){va.textContent='💬 '+msg;va.style.display='block';}
+      setDashReply('💬 WhatsApp → '+ct.name);
+      addHist('💬','WhatsApp: '+ct.name+(customMsg?' — "'+customMsg+'"':''),'Sent');
+      if(window.AndroidBridge) AndroidBridge.sendWhatsApp(ct.phone, finalMsg);
+      else showT('WhatsApp → '+ct.name+': '+finalMsg);
+      return;
+    } else {
+      var msg='No matching WhatsApp contact. Add contacts first.';
+      if(vt)vt.textContent=msg;
+      setDashReply(msg);
+      return;
+    }
   }
+
+  // ─── APP LAUNCH INTENT ───
+  var appKeys = Object.keys(APPS);
+  var launchTarget = null;
+  // Check "open X" or "launch X" pattern
+  var openMatch = lower.match(/(?:open|launch|start|show|jaav|khol)\s+(\w+(?:\s+\w+)?)/);
+  if(openMatch){
+    var appWord = openMatch[1].trim();
+    // direct map
+    if(APPS[appWord]) launchTarget = appWord;
+    else {
+      // partial match
+      for(var k=0;k<appKeys.length;k++){
+        if(appKeys[k].indexOf(appWord)!==-1 || appWord.indexOf(appKeys[k])!==-1){
+          launchTarget=appKeys[k]; break;
+        }
+      }
+    }
+  }
+  // Also check if any app name is directly in the text
+  if(!launchTarget){
+    for(var k=0;k<appKeys.length;k++){
+      if(lower.indexOf(appKeys[k])!==-1){ launchTarget=appKeys[k]; break; }
+    }
+  }
+  if(launchTarget){
+    var appName=launchTarget.charAt(0).toUpperCase()+launchTarget.slice(1);
+    var msg='Opening '+appName+'...';
+    if(vt)vt.textContent=msg;
+    if(va){va.textContent='🚀 '+msg;va.style.display='block';}
+    setDashReply('🚀 Launching '+appName);
+    addHist('🚀','Opened '+appName,'Done');
+    launch(launchTarget);
+    return;
+  }
+
+  // ─── EMAIL INTENT ───
+  if(/\b(email|mail|gmail|inbox)\b/.test(lower)){
+    G(22); addHist('📧','Email assistant opened','Done'); return;
+  }
+
+  // ─── HISTORY INTENT ───
+  if(/\b(history|tasks|previous|last)\b/.test(lower)){
+    G(23); return;
+  }
+
+  // ─── SETTINGS INTENT ───
+  if(/\b(setting|settings|permission)\b/.test(lower)){
+    G(16); return;
+  }
+
+  // ─── FALLBACK ───
+  var reply='Got it: "'+text+'". I can call, WhatsApp, or launch apps for you.';
+  if(vt)vt.textContent=reply;
+  if(va){va.style.display='none';}
+  setDashReply(reply);
 }
 
-function launchCustomApp() {
-  var val = document.getElementById('custom-app-input').value.trim();
-  if (!val) return;
-  launchApp(val);
-  document.getElementById('custom-app-input').value = '';
+function setDashReply(msg){
+  var el=document.getElementById('dashReply'); if(!el)return;
+  el.textContent=msg;
+  setTimeout(function(){el.textContent='';},4000);
 }
 
-function filterApps(query) {
-  var lower = query.toLowerCase();
-  var btns = document.querySelectorAll('#app-grid-full .app-icon-btn');
-  btns.forEach(function(btn) {
-    var label = btn.querySelector('.app-icon-label').textContent.toLowerCase();
-    btn.style.display = !query || label.indexOf(lower) !== -1 ? 'flex' : 'none';
+// ─── QUICK ACTIONS ───
+function quickCall(){
+  if(S.callCtx.length===0){showT('No call contact selected. Tap Manage to pick one.');setTimeout(function(){G(4);},1200);return;}
+  var ct=S.callCtx[0];
+  addHist('📞','Called '+ct.name,'Done');
+  if(window.AndroidBridge) AndroidBridge.callPhone(ct.phone);
+  else showT('Calling '+ct.name+' ('+ct.phone+')');
+}
+function quickWA(){
+  if(S.waCtx.length===0){showT('No WhatsApp contact selected. Tap Manage to pick one.');setTimeout(function(){G(4);},1200);return;}
+  var ct=S.waCtx[0];
+  addHist('💬','WhatsApp: '+ct.name,'Sent');
+  if(window.AndroidBridge) AndroidBridge.sendWhatsApp(ct.phone,'Hello '+ct.name+'!');
+  else showT('WhatsApp → '+ct.name);
+}
+
+// ─── APP LAUNCHER ───
+function launch(key){
+  var k=key.toLowerCase().trim();
+  var pkg=APPS[k]||k;
+  addHist('🚀','Opened '+k.charAt(0).toUpperCase()+k.slice(1),'Done');
+  if(window.AndroidBridge) AndroidBridge.openApp(pkg);
+  else showT('Opening '+k+'...');
+}
+function launchCustom(){
+  var v=document.getElementById('customApp').value.trim(); if(!v)return;
+  launch(v); document.getElementById('customApp').value='';
+}
+function filterApps(q){
+  var lower=q.toLowerCase();
+  document.querySelectorAll('#appGridFull .app-btn').forEach(function(b){
+    var name=b.getAttribute('data-name')||'';
+    b.style.display=!q||name.indexOf(lower)!==-1?'flex':'none';
   });
 }
 
-// ───── CHAT ─────
-var chatTypingShown = false;
-function sendChat() {
-  var input = document.getElementById('chat-input');
-  var text = input ? input.value.trim() : '';
-  if (!text) return;
-  input.value = '';
+// ─── VOICE ───
+function startVoice(){ G(8); if(window.AndroidBridge)AndroidBridge.startVoice(); }
+function trigVoice(){
+  var vs=document.getElementById('vState');
+  if(vs)vs.textContent='Listening...';
+  var va=document.getElementById('vAction'); if(va)va.style.display='none';
+  if(window.AndroidBridge) AndroidBridge.startVoice();
+  else{setTimeout(function(){if(vs)vs.textContent='Tap to speak';},2000);}
+}
+function setLang(l){
+  S.lang=l;
+  ['gu','hi','en'].forEach(function(x){
+    var b=document.getElementById('lg-'+x); if(!b)return;
+    b.style.cssText=x===l
+      ?'flex:1;padding:9px;border-radius:10px;background:rgba(34,211,238,.15);border:1px solid rgba(34,211,238,.4);color:#22D3EE;font-size:13px;font-weight:700;cursor:pointer;'
+      :'flex:1;padding:9px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;color:#64748B;font-size:13px;cursor:pointer;';
+  });
+  if(window.AndroidBridge)AndroidBridge.showToast('Language: '+l.toUpperCase());
+}
+function runTextCmd(){
+  var v=document.getElementById('vText'); var t=v?v.value.trim():''; if(!t)return;
+  processCmd(t, false); if(v)v.value='';
+}
+function testCmd(t){
+  var vt=document.getElementById('vTrans'); if(vt)vt.textContent='"'+t+'"';
+  processCmd(t, false);
+}
+window.onSpeechResult=function(text){
+  var vt=document.getElementById('vTrans'); if(vt)vt.textContent='"'+text+'"';
+  var vs=document.getElementById('vState'); if(vs)vs.textContent='Got it!';
+  processCmd(text, true);
+};
+window.onSpeechState=function(s){
+  var vs=document.getElementById('vState');
+  if(vs)vs.textContent=s==='listening'?'Listening... Speak now':'Tap to speak';
+};
 
-  var container = document.getElementById('chat-messages');
-  var userBubble = document.createElement('div');
-  userBubble.style.cssText = 'display:flex;justify-content:flex-end;';
-  userBubble.innerHTML = '<div style="background:linear-gradient(135deg,#2563EB,#06B6D4);border-radius:14px 14px 4px 14px;padding:12px 14px;max-width:78%;font-size:13px;color:#fff;line-height:1.5;">' + escapeHtml(text) + '</div>';
-  container.appendChild(userBubble);
-  container.scrollTop = container.scrollHeight;
+// ─── DASHBOARD TEXT INPUT ───
+function dashCmd(){
+  var inp=document.getElementById('dashIn'); var t=inp?inp.value.trim():'';
+  if(!t){startVoice();return;}
+  if(inp)inp.value='';
+  processCmd(t, false);
+}
 
+// ─── CHAT ───
+function sendChat(){
+  var inp=document.getElementById('chatIn'); var t=inp?inp.value.trim():''; if(!t)return;
+  if(inp)inp.value='';
+  var c=document.getElementById('chatMsgs');
+  // User bubble
+  var ub=document.createElement('div');
+  ub.style.cssText='display:flex;justify-content:flex-end;';
+  ub.innerHTML='<div class="cb-user">'+esc(t)+'</div>';
+  c.appendChild(ub); c.scrollTop=c.scrollHeight;
   // Process command
-  processCommand(text);
-
-  setTimeout(function() {
-    var botBubble = document.createElement('div');
-    botBubble.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
-    botBubble.innerHTML = '<div style="width:32px;height:32px;border-radius:10px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🤖</div>' +
-      '<div style="background:#10192E;border:1px solid #1D2B4A;border-radius:14px 14px 14px 4px;padding:12px;max-width:78%;font-size:13px;color:#CBD5E1;line-height:1.6;">' + getBotReply(text) + '</div>';
-    container.appendChild(botBubble);
-    container.scrollTop = container.scrollHeight;
-  }, 700);
+  processCmd(t, false);
+  // Bot reply
+  setTimeout(function(){
+    var bb=document.createElement('div');
+    bb.style.cssText='display:flex;gap:9px;align-items:flex-end;';
+    bb.innerHTML='<div style="width:30px;height:30px;border-radius:9px;background:rgba(34,211,238,.12);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</div>'+
+      '<div class="cb-bot">'+botReply(t)+'</div>';
+    c.appendChild(bb); c.scrollTop=c.scrollHeight;
+  }, 600);
 }
-
-function getBotReply(text) {
-  var lower = text.toLowerCase();
-  if (lower.indexOf('call') !== -1) return 'Dialing now... Check your phone for the native dialer.';
-  if (lower.indexOf('whatsapp') !== -1) return 'Opening WhatsApp for the selected contact.';
-  if (lower.indexOf('open') !== -1) return 'Launching the app on your device now.';
-  if (lower.indexOf('email') !== -1) return 'Opening email assistant. You can draft and review replies there.';
-  return 'Got it! I\'m working on "' + escapeHtml(text) + '". What else can I help with?';
+function botReply(t){
+  var l=t.toLowerCase();
+  if(/call|ring/.test(l)){var ct=findContact(l,S.callCtx.length?S.callCtx:S.contacts);return ct?'Calling '+ct.name+' now — check your phone.':'No contact found. Tap Devices → Manage Contacts to add call contacts.';}
+  if(/whatsapp|wa|message/.test(l)){var ct=findContact(l,S.waCtx.length?S.waCtx:S.contacts);return ct?'Sending WhatsApp to '+ct.name+'...':'No contact found. Add WhatsApp contacts first.';}
+  if(/open|launch/.test(l)) return 'Launching the app on your device...';
+  if(/email|mail/.test(l)) return 'Opening email assistant...';
+  return 'Got it! Processing "'+esc(t)+'". What else can I help with?';
 }
+function clearChat(){ var c=document.getElementById('chatMsgs'); if(c)c.innerHTML=''; }
 
-function clearChat() {
-  var c = document.getElementById('chat-messages');
-  if (c) c.innerHTML = '';
-}
-
-// ───── DASHBOARD TEXT INPUT ─────
-function sendDashMsg() {
-  var input = document.getElementById('dash-input');
-  var text = input ? input.value.trim() : '';
-  if (!text) { startVoice(); return; }
-  input.value = '';
-  processCommand(text);
-  var reply = document.getElementById('dash-msg-reply');
-  if (reply) {
-    reply.style.display = 'block';
-    reply.textContent = 'Processing: "' + text + '"...';
-    setTimeout(function(){ reply.style.display = 'none'; }, 3000);
-  }
-}
-
-// ───── UTILITIES ─────
-function showToast(msg) {
-  if (window.AndroidBridge) { AndroidBridge.showToast(msg); return; }
-  var t = document.createElement('div');
-  t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(16,25,46,.95);color:#CBD5E1;border:1px solid #1D2B4A;border-radius:12px;padding:10px 18px;font-size:13px;z-index:999;max-width:300px;text-align:center;pointer-events:none;';
+// ─── UTILS ───
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showT(msg){
+  if(window.AndroidBridge){AndroidBridge.showToast(msg);return;}
+  var t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:rgba(16,25,46,.97);color:#CBD5E1;border:1px solid #1D2B4A;border-radius:12px;padding:10px 16px;font-size:13px;z-index:999;max-width:320px;text-align:center;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4);';
   document.body.appendChild(t);
-  setTimeout(function(){ if(t.parentNode)t.parentNode.removeChild(t); }, 2500);
+  setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2800);
 }
 
-function escapeHtml(text) {
-  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ───── SPLASH ANIMATION ─────
-window.addEventListener('DOMContentLoaded', function() {
-  var bar = document.getElementById('splash-bar');
-  var status = document.getElementById('splash-status');
-  if (bar) {
-    setTimeout(function(){ bar.style.width='60%'; status.textContent='Loading contacts engine...'; }, 600);
-    setTimeout(function(){ bar.style.width='90%'; status.textContent='Starting AI brain...'; }, 1300);
-    setTimeout(function(){ bar.style.width='100%'; status.textContent='Ready!'; }, 2000);
+// ─── SPLASH ───
+window.addEventListener('DOMContentLoaded',function(){
+  var bar=document.getElementById('sbar'), stat=document.getElementById('sstat');
+  if(bar){
+    setTimeout(function(){bar.style.width='55%';if(stat)stat.textContent='Loading contacts engine...';},600);
+    setTimeout(function(){bar.style.width='88%';if(stat)stat.textContent='Starting AI brain...';},1300);
+    setTimeout(function(){bar.style.width='100%';if(stat)stat.textContent='Ready!';},2100);
   }
-  // Restore screen from state
-  if (state.currentScreen && state.currentScreen !== 1) {
-    goToScreen(state.currentScreen);
+  // Restore last screen
+  if(S.cur && S.cur!==1){
+    setTimeout(function(){ G(S.cur); },100);
   }
-  refreshDashboard();
+  refreshDash();
 });
 </script>
 </body>
