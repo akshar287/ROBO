@@ -268,6 +268,35 @@ object ActionExecutor {
     }
 
     /**
+     * Looks up phone number for given contact name or digits.
+     */
+    fun getPhoneNumber(context: Context, target: String): String {
+        return try {
+            val trimmed = target.trim()
+            val digitsOnly = trimmed.filter { it.isDigit() || it == '+' }
+            if (digitsOnly.length >= 7) return digitsOnly
+
+            var foundNumber: String? = null
+            val cursor = context.contentResolver.query(
+                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                "${android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                arrayOf("%$trimmed%"),
+                null
+            )
+            cursor?.use { c ->
+                val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (c.moveToFirst()) {
+                    foundNumber = c.getString(numIdx)
+                }
+            }
+            foundNumber ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
      * Drafts SMS in default messaging app.
      */
     fun draftSms(context: Context, phoneNumber: String, message: String): Boolean {

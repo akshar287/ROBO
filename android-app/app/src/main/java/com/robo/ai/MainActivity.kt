@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var tts: TextToSpeech? = null
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var assetLoader: WebViewAssetLoader
+    private var inCallSpeechJob: Job? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +55,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Auto start background service
         startRoboService()
+
+        // Listen for InCallService answer / disconnect events
+        RoboInCallService.onCallActiveListener = {
+            runOnUiThread {
+                Log.d("ROBO_INCALL", "RoboInCallService: Call is answered by recipient!")
+                inCallSpeechJob?.cancel()
+                webView.evaluateJavascript("if (window.onCallAnswered) window.onCallAnswered();", null)
+            }
+        }
+        RoboInCallService.onCallDisconnectedListener = {
+            runOnUiThread {
+                Log.d("ROBO_INCALL", "RoboInCallService: Call disconnected")
+                inCallSpeechJob?.cancel()
+                webView.evaluateJavascript("if (window.onCallEnded) window.onCallEnded();", null)
+            }
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -200,13 +217,29 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     enableSpeakerphone(true)
                 }
                 ActionExecutor.callOrDialContact(this@MainActivity, target)
+                inCallSpeechJob?.cancel()
                 if (messageToSpeak.isNotBlank()) {
-                    scope.launch {
-                        delay(2500)
+                    inCallSpeechJob = scope.launch {
+                        // 8.5 second realistic pickup window fallback so it doesn't speak during ringtone
+                        delay(8500)
                         speak(messageToSpeak, "in_call_speech")
                     }
                 }
             }
+        }
+
+        @JavascriptInterface
+        fun triggerGreetingNow(message: String) {
+            runOnUiThread {
+                inCallSpeechJob?.cancel()
+                enableSpeakerphone(true)
+                speak(message, "in_call_speech")
+            }
+        }
+
+        @JavascriptInterface
+        fun getPhoneNumber(target: String): String {
+            return ActionExecutor.getPhoneNumber(this@MainActivity, target)
         }
 
         @JavascriptInterface

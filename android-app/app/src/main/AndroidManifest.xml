@@ -93,6 +93,16 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- In-Call Service to detect when outgoing calls are answered by recipient -->
+        <service
+            android:name=".RoboInCallService"
+            android:permission="android.permission.BIND_INCALL_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.telecom.InCallService" />
+            </intent-filter>
+        </service>
+
         <!-- Boot Receiver to keep ROBO alive after device restarts -->
         <receiver
             android:name=".BootReceiver"

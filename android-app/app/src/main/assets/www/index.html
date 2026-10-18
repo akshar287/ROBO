@@ -562,6 +562,17 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <span id="inCallAiSource" style="font-size:10px;color:#64748B;background:#1E293B;padding:2px 8px;border-radius:10px;">Ollama AI</span>
   </div>
 
+  <!-- Answer Waiting Banner: shown while waiting for Mummy to answer -->
+  <div id="inCallWaitBanner" style="display:flex;align-items:center;justify-content:space-between;background:rgba(34,211,238,.08);border-bottom:1px solid rgba(34,211,238,.2);padding:10px 16px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="dot dot-y" id="waitDot"></span>
+      <span id="inCallWaitText" style="font-size:12px;font-weight:700;color:#FCD34D;">Waiting for answer (Speaking in 8s)...</span>
+    </div>
+    <button onclick="triggerInCallGreetingManual()" style="padding:6px 14px;border-radius:12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:11px;font-weight:800;border:none;cursor:pointer;box-shadow:0 0 12px rgba(16,185,129,.35);">
+      🟢 Answered - Greet Now
+    </button>
+  </div>
+
   <!-- Real-Time Conversational Bubbles Log -->
   <div id="inCallDialogueStream" class="scroll-body" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
     <!-- Dialogues inserted here dynamically -->
@@ -1001,6 +1012,9 @@ var inCallSession = {
   initialGoal: '',
   timerInterval: null,
   seconds: 0,
+  countdownInterval: null,
+  countdownSeconds: 8,
+  greeted: false,
   dialogueHistory: [], // [{speaker: 'robo'|'caller', text: ''}]
   takeover: false,
   pendingCallerText: ''
@@ -1085,36 +1099,56 @@ function dialCall(target, speechScript){
 function launchInCallAgent(){
   if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : {name:'Mummy', phone:''});
-  var target = ct.name;
-  var speechScript = "Namaste " + target + "! I am ROBO AI Agent calling on behalf of Akshar: Akshar asked me to connect with you. How are you doing today?";
-  setDashReply('📞 Calling ' + target + ' from phone dialer — ROBO speaking on call...');
-  showT('Dialing ' + target + ' & speaking on call...');
-  addHist('📞', 'Phone Call to ' + target + ' — ROBO Conversing on Call', 'Call Active');
-
-  dialCall(target, speechScript);
+  startRealTimeInCall(ct, 'Talk on behalf of Akshar');
 }
 
 function startRealTimeInCall(contact, initialGoal){
   if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
 
+  // Ensure contact is structured
+  if(!contact) contact = { name: 'Mummy', phone: '' };
+  if(typeof contact === 'string') contact = { name: contact, phone: '' };
+
+  // Resolve phone number if not present
+  if(!contact.phone && window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
+    contact.phone = AndroidBridge.getPhoneNumber(contact.name);
+  }
+  if(!contact.phone){
+    var pool = (S.contacts || []).concat(S.callCtx || []);
+    for(var i=0; i<pool.length; i++){
+      if(pool[i].name.toLowerCase().indexOf(contact.name.toLowerCase()) !== -1 ||
+         contact.name.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
+        if(pool[i].phone){ contact.phone = pool[i].phone; break; }
+      }
+    }
+  }
+
   inCallSession.active = true;
   inCallSession.contact = contact;
   inCallSession.initialGoal = initialGoal || 'Talk on behalf of Akshar';
   inCallSession.seconds = 0;
+  inCallSession.greeted = false;
+  inCallSession.countdownSeconds = 8;
   inCallSession.dialogueHistory = [];
   inCallSession.takeover = false;
 
   // Open Screen 24
   G(24);
 
-  // Set contact header
+  // Set contact header on Screen 24
   document.getElementById('inCallName').textContent = contact.name;
-  document.getElementById('inCallPhone').textContent = contact.phone;
+  document.getElementById('inCallPhone').textContent = contact.phone || 'Cellular Call';
   document.getElementById('inCallTimer').textContent = '00:00';
   document.getElementById('inCallDialogueStream').innerHTML = '';
-  setInCallStatus('ROBO Speaking...', true);
 
-  // Start timer
+  // Show Waiting Banner & Countdown
+  var waitBanner = document.getElementById('inCallWaitBanner');
+  var waitText = document.getElementById('inCallWaitText');
+  if(waitBanner) waitBanner.style.display = 'flex';
+  if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + '... Waiting for answer (8s)';
+  setInCallStatus('Ringing... Waiting for answer', false);
+
+  // Start call duration timer
   if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
   inCallSession.timerInterval = setInterval(function(){
     inCallSession.seconds++;
@@ -1122,23 +1156,92 @@ function startRealTimeInCall(contact, initialGoal){
     document.getElementById('inCallTimer').textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
   }, 1000);
 
-  // Enable speakerphone and place direct phone call
+  // Fallback countdown: auto-greet after 8.5 seconds if answer event hasn't arrived
+  if(inCallSession.countdownInterval) clearInterval(inCallSession.countdownInterval);
+  inCallSession.countdownInterval = setInterval(function(){
+    inCallSession.countdownSeconds--;
+    if(inCallSession.countdownSeconds > 0){
+      if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + '... Waiting for answer (' + inCallSession.countdownSeconds + 's)';
+    } else {
+      clearInterval(inCallSession.countdownInterval);
+      inCallSession.countdownInterval = null;
+      if(!inCallSession.greeted && inCallSession.active){
+        speakInCallGreeting();
+      }
+    }
+  }, 1000);
+
+  // Enable speakerphone and dial the call WITHOUT speaking over the ringtone
   if(window.AndroidBridge){
     AndroidBridge.enableSpeakerphone(true);
-    AndroidBridge.callPhone(contact.phone);
-  }
-
-  // Generate initial greeting
-  var greeting = "Namaste " + contact.name + "! I am ROBO, Akshar's AI assistant calling on behalf of Akshar. " + (initialGoal ? initialGoal + ". " : "") + "How are you doing?";
-  addInCallBubble('robo', greeting);
-
-  // Speak aloud through speakerphone
-  if(window.AndroidBridge){
-    AndroidBridge.speakInCall(greeting);
+    if(contact.phone){
+      AndroidBridge.callPhone(contact.phone);
+    } else {
+      AndroidBridge.callOrDial(contact.name, ''); // empty speechScript ensures NO premature speech from Android
+    }
   }
 
   addHist('🗣️', 'In-Call 2-Way AI Call: ' + contact.name, 'Call Active');
 }
+
+function speakInCallGreeting(){
+  if(!inCallSession.active || inCallSession.greeted) return;
+  inCallSession.greeted = true;
+
+  if(inCallSession.countdownInterval){
+    clearInterval(inCallSession.countdownInterval);
+    inCallSession.countdownInterval = null;
+  }
+
+  var waitBanner = document.getElementById('inCallWaitBanner');
+  if(waitBanner){
+    waitBanner.style.display = 'none';
+  }
+
+  var cName = inCallSession.contact ? inCallSession.contact.name : 'Mummy';
+  var customNote = inCallSession.initialGoal && inCallSession.initialGoal !== 'Talk on behalf of Akshar' 
+    ? inCallSession.initialGoal 
+    : "Akshar asked me to talk with you";
+
+  // Exact Swaminarayan greeting requested by Akshar
+  var greeting = "Jay Swaminarayan " + cName + "! I am ROBO. I am talking to you on behalf of Akshar. " + customNote + ". Kem cho, how are you doing today?";
+
+  addInCallBubble('robo', greeting);
+  setInCallStatus('ROBO Speaking...', true);
+
+  if(window.AndroidBridge){
+    if(typeof AndroidBridge.triggerGreetingNow === 'function'){
+      AndroidBridge.triggerGreetingNow(greeting);
+    } else if(typeof AndroidBridge.speakInCall === 'function'){
+      AndroidBridge.speakInCall(greeting);
+    } else {
+      AndroidBridge.speak(greeting);
+    }
+  }
+}
+
+function triggerInCallGreetingManual(){
+  speakInCallGreeting();
+}
+
+window.onCallAnswered = function(){
+  console.log("ROBO: Call answered by recipient!");
+  if(inCallSession.active && !inCallSession.greeted){
+    // Short 600ms grace period so recipient can place phone to ear
+    setTimeout(function(){
+      if(inCallSession.active && !inCallSession.greeted){
+        speakInCallGreeting();
+      }
+    }, 600);
+  }
+};
+
+window.onCallEnded = function(){
+  console.log("ROBO: Call disconnected");
+  if(inCallSession.active){
+    endInCallSession();
+  }
+};
 
 function addInCallBubble(speaker, text){
   inCallSession.dialogueHistory.push({speaker: speaker, text: text});
@@ -1170,11 +1273,14 @@ function setInCallStatus(status, isSpeaking){
 // Called when ROBO finishes speaking an utterance in the call
 window.onTtsFinished = function(utteranceId){
   if(inCallSession.active && !inCallSession.takeover){
-    setInCallStatus('Listening to ' + (inCallSession.contact ? inCallSession.contact.name : 'Caller') + '...', false);
-    // Open mic to capture the other person's response!
-    if(window.AndroidBridge){
-      AndroidBridge.startVoice();
-    }
+    var cName = inCallSession.contact ? inCallSession.contact.name : 'Caller';
+    setInCallStatus('Listening to ' + cName + '...', false);
+    // 400ms pause to ensure audio clear, then open mic to capture caller's response
+    setTimeout(function(){
+      if(inCallSession.active && !inCallSession.takeover && window.AndroidBridge){
+        AndroidBridge.startVoice();
+      }
+    }, 400);
   }
 };
 
@@ -1182,7 +1288,7 @@ window.onTtsFinished = function(utteranceId){
 function handleCallerSpeech(callerText){
   if(!inCallSession.active) return;
   addInCallBubble('caller', callerText);
-  setInCallStatus('AI Brain Thinking...', false);
+  setInCallStatus('AI Brain Thinking (Ollama)...', false);
 
   if(inCallSession.takeover){
     // User took over call, do not auto-respond
@@ -1192,13 +1298,15 @@ function handleCallerSpeech(callerText){
   inCallSession.pendingCallerText = callerText;
 
   // Try querying Ollama for response, with fallback to neural engine
-  var prompt = "You are ROBO, a polite, intelligent personal AI agent calling on behalf of Akshar. " +
-    "Contact name: " + (inCallSession.contact ? inCallSession.contact.name : "Contact") + ". " +
-    "Akshar's goal: " + inCallSession.initialGoal + ". " +
-    "The person on the call just said: \"" + callerText + "\". " +
-    "Respond naturally in 1 to 2 short sentences in the same language (Gujarati, Hindi, or English).";
+  var cName = inCallSession.contact ? inCallSession.contact.name : 'Mummy';
+  var prompt = "You are ROBO, a polite, respectful personal AI agent speaking on a phone call with " + cName + " on behalf of Akshar.\n" +
+    (inCallSession.initialGoal ? "Akshar's context: " + inCallSession.initialGoal + ".\n" : "") +
+    "Conversation history:\n" +
+    inCallSession.dialogueHistory.slice(-4).map(function(d){ return (d.speaker === 'robo' ? 'ROBO: ' : cName + ': ') + d.text; }).join("\n") + "\n" +
+    cName + " just said: \"" + callerText + "\".\n" +
+    "Give a polite, respectful 1-sentence reply as ROBO on behalf of Akshar. If " + cName + " speaks in Gujarati, reply in Gujarati and include Jay Swaminarayan. Maximum 20 words.";
 
-  if(window.AndroidBridge && AndroidBridge.queryOllama){
+  if(window.AndroidBridge && typeof AndroidBridge.queryOllama === 'function'){
     var u = S.ollamaUrl || 'http://10.0.2.2:11434';
     var m = S.ollamaModel || 'llama3';
     AndroidBridge.queryOllama(u, m, prompt, 'in_call_ai');
@@ -1213,29 +1321,35 @@ function handleInCallAiResponse(aiText){
   addInCallBubble('robo', cleanReply);
   setInCallStatus('ROBO Speaking...', true);
   if(window.AndroidBridge){
-    AndroidBridge.speakInCall(cleanReply);
+    if(typeof AndroidBridge.speakInCall === 'function'){
+      AndroidBridge.speakInCall(cleanReply);
+    } else {
+      AndroidBridge.speak(cleanReply);
+    }
   }
 }
 
 // Built-in intelligent conversational engine (Fallback for 0ms latency / offline)
 function handleInCallAiFallback(){
   if(!inCallSession.active) return;
-  var text = inCallSession.pendingCallerText.toLowerCase();
-  var cName = inCallSession.contact ? inCallSession.contact.name : 'there';
+  var text = (inCallSession.pendingCallerText || '').toLowerCase();
+  var cName = inCallSession.contact ? inCallSession.contact.name : 'Mummy';
   var reply = "";
 
-  if(/kem cho|kya che|sarav|maja ma|bolo/.test(text)){
-    reply = "Namaste " + cName + "! Akshar majama che, ane Akshar e mane tamari sathe vaat karva kidhu che. Tamne koi sahayata joiye che?";
+  if(/kem cho|kya che|sarav|maja ma|bolo|majama/.test(text)){
+    reply = "Jay Swaminarayan " + cName + "! Akshar majama che, ane Akshar e mane tamari sathe vaat karva kidhu che. Tamne koi sahayata joiye che?";
   } else if(/kaise ho|kya kar rahe|boliye|bolo|haan/.test(text)){
-    reply = "Namaste " + cName + "! Akshar ne mujhe aapse baat karne ke liye kaha hai. Akshar thodi der me aapse connect karenge!";
-  } else if(/hello|hi|who is this|who are you|kon/.test(text)){
-    reply = "Hello! I am ROBO, Akshar's personal AI agent calling on his behalf. Akshar asked me to reach out to you directly!";
-  } else if(/reach|home|time|khana|dinner|aav|aave/.test(text)){
-    reply = "Yes, Akshar asked me to inform you that he is on schedule and will be there shortly!";
-  } else if(/ok|ha|thik|bye|saras|barobar/.test(text)){
-    reply = "Thank you so much " + cName + "! I will update Akshar right away. Have a wonderful day!";
+    reply = "Jay Swaminarayan " + cName + "! Akshar ne mujhe aapse baat karne ke liye kaha hai. Akshar thodi der me aapse connect karenge!";
+  } else if(/hello|hi|who is this|who are you|kon|kaun/.test(text)){
+    reply = "Jay Swaminarayan! I am ROBO AI, Akshar's personal assistant calling on his behalf. Akshar asked me to talk with you!";
+  } else if(/reach|home|time|khana|dinner|aav|aave|ghar/.test(text)){
+    reply = "Akshar asked me to convey that he is on the way and will reach shortly!";
+  } else if(/swaminarayan|jay/.test(text)){
+    reply = "Jay Swaminarayan " + cName + "! Akshar e tamne yaad karavya che!";
+  } else if(/ok|ha|thik|bye|saras|barobar|saru/.test(text)){
+    reply = "Saras " + cName + "! I will let Akshar know right away. Jay Swaminarayan!";
   } else {
-    reply = "Understood, " + cName + "! I am noting this down for Akshar right now. Is there anything else you would like me to convey to him?";
+    reply = "Ji " + cName + ", I have noted this down for Akshar. Akshar will call you directly if needed!";
   }
 
   handleInCallAiResponse(reply);
@@ -1250,7 +1364,11 @@ function sendInCallCustom(){
   addInCallBubble('robo', val);
   setInCallStatus('ROBO Speaking...', true);
   if(window.AndroidBridge){
-    AndroidBridge.speakInCall(val);
+    if(typeof AndroidBridge.speakInCall === 'function'){
+      AndroidBridge.speakInCall(val);
+    } else {
+      AndroidBridge.speak(val);
+    }
   }
 }
 
@@ -1278,10 +1396,14 @@ function toggleTakeover(){
 
 function endInCallSession(){
   if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
+  if(inCallSession.countdownInterval) clearInterval(inCallSession.countdownInterval);
   inCallSession.active = false;
 
+  var waitBanner = document.getElementById('inCallWaitBanner');
+  if(waitBanner) waitBanner.style.display = 'none';
+
   // Restore speakerphone
-  if(window.AndroidBridge){
+  if(window.AndroidBridge && typeof AndroidBridge.enableSpeakerphone === 'function'){
     AndroidBridge.enableSpeakerphone(false);
   }
 
@@ -1416,24 +1538,36 @@ function processCmd(text, fromVoice){
   }
 
   // ─── 2. CALL & TALK ON ACTIVE PHONE CALL INTENT ───
-  var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/.test(lower) && /\b(call|phone|ring|dial|lagav|lagao)\b/.test(lower))
-                     || /\b(talk with|baat karo|vaat kar)\b/.test(lower);
+  var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/i.test(lower) && /\b(call|phone|ring|dial|lagav|lagao)\b/i.test(lower))
+                     || /\b(talk with|talk to|baat karo|vaat kar|vaat karo)\b/i.test(lower);
 
   if(isTalkBehalf){
     var target = extractCallTarget(text);
     var customNote = extractMsg(text);
-    var speechScript = customNote 
-      ? "Namaste " + target + "! I am ROBO AI calling on behalf of Akshar: " + customNote
-      : "Namaste " + target + "! I am ROBO AI calling on behalf of Akshar: Akshar asked me to talk with you. How are you?";
 
-    var msg = '📞 Calling ' + target + ' — ROBO speaking on call...';
+    var foundContact = null;
+    var pool = (S.contacts || []).concat(S.callCtx || []);
+    for(var i=0; i<pool.length; i++){
+      if(pool[i].name.toLowerCase() === target.toLowerCase() ||
+         pool[i].name.toLowerCase().indexOf(target.toLowerCase()) !== -1 ||
+         target.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
+        foundContact = pool[i];
+        break;
+      }
+    }
+    var phone = foundContact ? (foundContact.phone || '') : '';
+    if(!phone && window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
+      phone = AndroidBridge.getPhoneNumber(target);
+    }
+    var ct = { name: target, phone: phone };
+
+    var msg = '📞 Calling ' + target + ' & talking on behalf of Akshar...';
     if(vt) vt.textContent = msg;
     if(va){va.textContent=msg;va.style.display='block';}
     setDashReply(msg);
-    showT('Dialing ' + target + ' & speaking on call...');
-    addHist('📞', 'Phone Call to ' + target + ' — ROBO Conversing on Call', 'Call Active');
+    showT('Calling ' + target + ' — ROBO ready to talk!');
 
-    dialCall(target, speechScript);
+    startRealTimeInCall(ct, customNote);
     return;
   }
 
@@ -1644,6 +1778,10 @@ function testCmd(t){
 }
 
 window.onSpeechResult=function(text){
+  if(inCallSession && inCallSession.active && !inCallSession.takeover){
+    handleCallerSpeech(text);
+    return;
+  }
   var vt=document.getElementById('vTrans'); if(vt)vt.textContent='"'+text+'"';
   var vs=document.getElementById('vState'); if(vs)vs.textContent='Got it!';
   processCmd(text, true);
