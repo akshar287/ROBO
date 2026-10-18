@@ -908,7 +908,19 @@ function launchInCallAgent(){
   if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
   var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : null);
   if(!ct){ showT('No call contact selected. Tap Manage to pick one.'); G(4); return; }
-  startRealTimeInCall(ct, 'Check in and talk on behalf of Akshar');
+  
+  var speechScript = "Namaste " + ct.name + "! I am ROBO AI Agent calling on behalf of Akshar: Akshar asked me to connect with you. How are you doing today?";
+  setDashReply('📞 Dialing ' + ct.name + ' from phone dialer — ROBO speaking on call...');
+  showT('Dialing ' + ct.name + ' directly from phone dialer...');
+  addHist('📞', 'Phone Call to ' + ct.name + ' — ROBO Conversing on Call', 'Call Active');
+
+  if(window.AndroidBridge){
+    AndroidBridge.enableSpeakerphone(true);
+    AndroidBridge.callPhone(ct.phone);
+    setTimeout(function(){
+      AndroidBridge.speakInCall(speechScript);
+    }, 2200);
+  }
 }
 
 function startRealTimeInCall(contact, initialGoal){
@@ -1181,7 +1193,7 @@ function processCmd(text, fromVoice){
     return;
   }
 
-  // ─── 1. CALL & TALK (REAL-TIME CONVERSATION) INTENT ───
+  // ─── 1. CALL & TALK ON ACTIVE PHONE CALL INTENT ───
   var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/.test(lower) && /\b(call|phone|ring|dial|lagav|lagao)\b/.test(lower))
                      || /\b(talk with|baat karo|vaat kar)\b/.test(lower);
 
@@ -1192,10 +1204,27 @@ function processCmd(text, fromVoice){
 
     if(ct){
       var customNote = extractMsg(text);
-      startRealTimeInCall(ct, customNote || 'Talk with ' + ct.name + ' on behalf of Akshar');
+      var speechScript = customNote 
+        ? "Namaste " + ct.name + "! I am ROBO AI calling on behalf of Akshar: " + customNote
+        : "Namaste " + ct.name + "! I am ROBO AI calling on behalf of Akshar: Akshar asked me to talk with you. How are you?";
+
+      setDashReply('📞 Dialing ' + ct.name + ' from phone dialer — ROBO speaking on call...');
+      showT('Dialing ' + ct.name + ' directly from phone dialer...');
+      addHist('📞', 'Phone Call to ' + ct.name + ' — ROBO Conversing on Call', 'Call Active');
+
+      if(window.AndroidBridge){
+        // 1. Enable speakerphone for real in-call audio
+        AndroidBridge.enableSpeakerphone(true);
+        // 2. Immediately dial the real cellular call directly from phone dialer
+        AndroidBridge.callPhone(ct.phone);
+        // 3. Speak real-time AI greeting on the active call
+        setTimeout(function(){
+          AndroidBridge.speakInCall(speechScript);
+        }, 2200);
+      }
       return;
     } else {
-      var msg='No contact selected. Please select a call contact in Settings.';
+      var msg='No contact found. Please select call contacts in Setup.';
       if(vt)vt.textContent=msg;
       setDashReply(msg);
       showT(msg);
