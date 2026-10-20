@@ -34,6 +34,115 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var assetLoader: WebViewAssetLoader
     private var inCallSpeechJob: Job? = null
+    private var activeCallTarget: String = "Mummy"
+    private var activeCallGoal: String = ""
+    private var isCallInProgress: Boolean = false
+    private var hasGreetedCaller: Boolean = false
+    private val CALL_NOTIFICATION_ID = 2002
+    private val CALL_CHANNEL_ID = "robo_call_channel"
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent?.action == "com.robo.ai.ACTION_GREET_NOW") {
+            Log.d("ROBO_CALL", "ACTION_GREET_NOW received from notification tap")
+            triggerGreetingNow()
+        }
+    }
+
+    private fun createCallNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                CALL_CHANNEL_ID,
+                "ROBO Call Status",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Shows live status and controls for active phone calls"
+            }
+            val manager = getSystemService(android.app.NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
+        }
+    }
+
+    fun showInCallNotification(title: String, text: String, showGreetAction: Boolean) {
+        createCallNotificationChannel()
+
+        val openAppIntent = android.app.PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val greetIntent = Intent(this, MainActivity::class.java).apply {
+            action = "com.robo.ai.ACTION_GREET_NOW"
+        }
+        val greetPendingIntent = android.app.PendingIntent.getActivity(
+            this,
+            1,
+            greetIntent,
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val builder = androidx.core.app.NotificationCompat.Builder(this, CALL_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setSmallIcon(android.R.drawable.stat_sys_phone_call)
+            .setContentIntent(openAppIntent)
+            .setOngoing(true)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+
+        if (showGreetAction) {
+            builder.addAction(
+                android.R.drawable.ic_btn_speak_now,
+                "🟢 Answered - Greet Now",
+                greetPendingIntent
+            )
+        }
+
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        manager?.notify(CALL_NOTIFICATION_ID, builder.build())
+    }
+
+    fun cancelInCallNotification() {
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        manager?.cancel(CALL_NOTIFICATION_ID)
+    }
+
+    fun triggerGreetingNow(customGreeting: String = "") {
+        if (hasGreetedCaller && customGreeting.isBlank()) return
+        hasGreetedCaller = true
+        inCallSpeechJob?.cancel()
+        enableSpeakerphone(true)
+
+        val cName = if (activeCallTarget.isBlank()) "Mummy" else activeCallTarget
+        val note = if (activeCallGoal.isNotBlank()) activeCallGoal else "Akshar asked me to talk with you"
+        val greeting = if (customGreeting.isNotBlank()) {
+            customGreeting
+        } else {
+            "Jay Swaminarayan $cName! I am ROBO. I am talking to you on behalf of Akshar. $note. Kem cho, how are you doing today?"
+        }
+
+        showInCallNotification("🗣️ ROBO Speaking on Call", "Talking with $cName on behalf of Akshar", false)
+        speak(greeting, "in_call_greeting")
+        webView.evaluateJavascript("if (window.onCallAnswered) window.onCallAnswered();", null)
+    }
+
+    fun enableSpeakerphone(enable: Boolean) {
+        runOnUiThread {
+            try {
+                val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                am.isSpeakerphoneOn = enable
+                if (enable) {
+                    am.mode = android.media.AudioManager.MODE_IN_COMMUNICATION
+                } else {
+                    am.mode = android.media.AudioManager.MODE_NORMAL
+                }
+                Log.d("ROBO_AUDIO", "Speakerphone toggled: $enable")
+            } catch (e: Exception) {
+                Log.e("ROBO_AUDIO", "Error setting speakerphone: ${e.message}")
+            }
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,10 +203,34 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         runOnUiThread {
             when (state) {
                 android.telephony.TelephonyManager.CALL_STATE_OFFHOOK -> {
-                    Log.d("ROBO_CALL", "Telephony state: OFFHOOK (call active)")
+                    Log.d("ROBO_CALL", "Telephony state: OFFHOOK (outgoing call dialing or active)")
+                    isCallInProgress = true
+                    enableSpeakerphone(true)
+                    showInCallNotification(
+                        "📞 Calling $activeCallTarget...",
+                        "Waiting for answer... Tap [Answered] or ROBO will greet automatically",
+                        true
+                    )
+
+                    // Start pickup waiting job:
+                    // Indian cellular ring duration is ~3-4 seconds per ring.
+                    // 9.5 seconds gives enough time for 2-3 rings before greeting, or user can tap "Answered - Greet Now" anytime!
+                    inCallSpeechJob?.cancel()
+                    inCallSpeechJob = scope.launch {
+                        delay(9500)
+                        if (isCallInProgress && !hasGreetedCaller) {
+                            Log.d("ROBO_CALL", "Ring wait elapsed, auto-triggering greeting now")
+                            triggerGreetingNow()
+                        }
+                    }
                 }
                 android.telephony.TelephonyManager.CALL_STATE_IDLE -> {
-                    Log.d("ROBO_CALL", "Telephony state: IDLE (call ended)")
+                    Log.d("ROBO_CALL", "Telephony state: IDLE (call ended/hung up)")
+                    isCallInProgress = false
+                    hasGreetedCaller = false
+                    inCallSpeechJob?.cancel()
+                    enableSpeakerphone(false)
+                    cancelInCallNotification()
                     webView.evaluateJavascript("if (window.onCallEnded) window.onCallEnded();", null)
                 }
             }
@@ -255,27 +388,21 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         @JavascriptInterface
         fun callOrDial(target: String, messageToSpeak: String) {
             runOnUiThread {
-                if (messageToSpeak.isNotBlank()) {
-                    enableSpeakerphone(true)
-                }
-                ActionExecutor.callOrDialContact(this@MainActivity, target)
-                inCallSpeechJob?.cancel()
-                if (messageToSpeak.isNotBlank()) {
-                    inCallSpeechJob = scope.launch {
-                        // 8.5 second realistic pickup window fallback so it doesn't speak during ringtone
-                        delay(8500)
-                        speak(messageToSpeak, "in_call_speech")
-                    }
-                }
+                activeCallTarget = if (target.isBlank()) "Mummy" else target
+                activeCallGoal = messageToSpeak
+                isCallInProgress = true
+                hasGreetedCaller = false
+                enableSpeakerphone(true)
+
+                // Dials real cellular call directly or opens native dialpad
+                ActionExecutor.callOrDialContact(this@MainActivity, activeCallTarget)
             }
         }
 
         @JavascriptInterface
         fun triggerGreetingNow(message: String) {
             runOnUiThread {
-                inCallSpeechJob?.cancel()
-                enableSpeakerphone(true)
-                speak(message, "in_call_speech")
+                this@MainActivity.triggerGreetingNow(message)
             }
         }
 
@@ -322,6 +449,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             runOnUiThread {
                 Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
             }
+        }
+
+        @JavascriptInterface
+        fun enableSpeakerphone(enable: Boolean) {
+            this@MainActivity.enableSpeakerphone(enable)
         }
 
         /**
@@ -372,23 +504,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
 
-        @JavascriptInterface
-        fun enableSpeakerphone(enable: Boolean) {
-            runOnUiThread {
-                try {
-                    val am = getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
-                    am.isSpeakerphoneOn = enable
-                    if (enable) {
-                        am.mode = android.media.AudioManager.MODE_IN_COMMUNICATION
-                    } else {
-                        am.mode = android.media.AudioManager.MODE_NORMAL
-                    }
-                    Log.d("ROBO_AUDIO", "Speakerphone toggled: $enable")
-                } catch (e: Exception) {
-                    Log.e("ROBO_AUDIO", "Error setting speakerphone: ${e.message}")
-                }
-            }
-        }
+
 
         @JavascriptInterface
         fun speakInCall(text: String) {
@@ -561,6 +677,15 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 override fun onDone(utteranceId: String?) {
                     runOnUiThread {
                         webView.evaluateJavascript("if (window.onTtsFinished) window.onTtsFinished('$utteranceId');", null)
+                        if (isCallInProgress && (utteranceId == "in_call_greeting" || utteranceId == "in_call_speech")) {
+                            // Give brief audio clearance, then start listening for Mummy's response
+                            scope.launch {
+                                delay(400)
+                                if (isCallInProgress) {
+                                    startListening()
+                                }
+                            }
+                        }
                     }
                 }
                 override fun onError(utteranceId: String?) {}

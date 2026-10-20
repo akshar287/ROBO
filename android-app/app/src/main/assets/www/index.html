@@ -539,7 +539,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,211,238,.12);border:1.5px solid rgba(34,211,238,.3);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
       <div>
         <p id="inCallName" style="font-size:15px;font-weight:800;color:#F1F5F9;">Mummy</p>
-        <p id="inCallPhone" style="font-size:11px;color:#38BDF8;">+91 98765 00001</p>
+        <p id="inCallPhone" style="font-size:11px;color:#38BDF8;">Direct Cellular Call</p>
       </div>
     </div>
     <div style="text-align:right;">
@@ -716,11 +716,7 @@ function loadContacts(){
   }
 }
 function useDemoContacts(silent){
-  processContacts([
-    {name:'Mummy',phone:'+919876500001'},{name:'Papa',phone:'+919876500002'},
-    {name:'Rahul',phone:'+919876500003'},{name:'Priya',phone:'+919876500004'},
-    {name:'Boss',phone:'+919876500005'},{name:'Office',phone:'+919876500006'}
-  ], silent);
+  if(!silent) showT('No contacts found. Tap "Load Contacts" to sync your real phonebook.');
 }
 function processContacts(list, silent){
   if(!list || !list.length) return;
@@ -1183,57 +1179,39 @@ function startRealTimeInCall(contact, initialGoal){
   inCallSession.initialGoal = initialGoal || 'Talk on behalf of Akshar';
   inCallSession.seconds = 0;
   inCallSession.greeted = false;
-  inCallSession.countdownSeconds = 12;
   inCallSession.dialogueHistory = [];
   inCallSession.takeover = false;
 
-  // Open Screen 24
-  G(24);
+  // Background update Screen 24 elements without forcing navigation
+  var inName = document.getElementById('inCallName');
+  if(inName) inName.textContent = contact.name;
+  var inPhone = document.getElementById('inCallPhone');
+  if(inPhone) inPhone.textContent = contact.phone || 'Direct Cellular Call';
+  var inTimer = document.getElementById('inCallTimer');
+  if(inTimer) inTimer.textContent = '00:00';
+  var inStream = document.getElementById('inCallDialogueStream');
+  if(inStream) inStream.innerHTML = '';
 
-  // Set contact header on Screen 24
-  document.getElementById('inCallName').textContent = contact.name;
-  document.getElementById('inCallPhone').textContent = contact.phone || 'Direct Cellular Call';
-  document.getElementById('inCallTimer').textContent = '00:00';
-  document.getElementById('inCallDialogueStream').innerHTML = '';
-
-  // Show Waiting Banner & Countdown
   var waitBanner = document.getElementById('inCallWaitBanner');
   var waitText = document.getElementById('inCallWaitText');
   if(waitBanner) waitBanner.style.display = 'flex';
-  if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + (contact.phone ? ' (' + contact.phone + ')' : '') + '... Waiting for answer (12s)';
-  setInCallStatus('Calling ' + contact.name + '... Waiting for answer', false);
+  if(waitText) waitText.textContent = '⏳ Dialing ' + contact.name + ' on cellular network... Waiting for answer';
+  setInCallStatus('Dialing ' + contact.name + ' on phone dialpad...', false);
+
+  showT('📞 Dialing ' + contact.name + ' on phone dialer... ROBO will speak when answered!');
 
   // Start call duration timer
   if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
   inCallSession.timerInterval = setInterval(function(){
     inCallSession.seconds++;
     var m = Math.floor(inCallSession.seconds/60), s = inCallSession.seconds%60;
-    document.getElementById('inCallTimer').textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
+    if(inTimer) inTimer.textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
   }, 1000);
 
-  // Fallback countdown: auto-greet after 12 seconds if answer event hasn't arrived
-  if(inCallSession.countdownInterval) clearInterval(inCallSession.countdownInterval);
-  inCallSession.countdownInterval = setInterval(function(){
-    inCallSession.countdownSeconds--;
-    if(inCallSession.countdownSeconds > 0){
-      if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + '... Waiting for answer (' + inCallSession.countdownSeconds + 's)';
-    } else {
-      clearInterval(inCallSession.countdownInterval);
-      inCallSession.countdownInterval = null;
-      if(!inCallSession.greeted && inCallSession.active){
-        speakInCallGreeting();
-      }
-    }
-  }, 1000);
-
-  // Enable speakerphone and trigger ACTUAL cellular phone call
+  // Enable speakerphone and trigger ACTUAL cellular phone call in Android
   if(window.AndroidBridge){
     AndroidBridge.enableSpeakerphone(true);
-    if(contact.phone && !isDemoNumber(contact.phone)){
-      AndroidBridge.callPhone(contact.phone);
-    } else {
-      AndroidBridge.callOrDial(contact.name, ''); // dials actual contact directly in Kotlin
-    }
+    AndroidBridge.callOrDial(contact.name, inCallSession.initialGoal);
   }
 
   addHist('🗣️', 'In-Call 2-Way AI Call: ' + contact.name, 'Call Active');
@@ -1929,14 +1907,31 @@ function showT(msg){
 
 // ─── SPLASH ───
 window.addEventListener('DOMContentLoaded',function(){
+  // Never restore in-call screen 24 on launch
+  if(S.cur === 24) S.cur = 7;
+
+  // Cleanse any stale demo dummy contacts from localStorage
+  if(S.contacts && S.contacts.length){
+    S.contacts = S.contacts.filter(function(c){ return !isDemoNumber(c.phone); });
+  }
+  if(S.callCtx && S.callCtx.length){
+    S.callCtx = S.callCtx.filter(function(c){ return !isDemoNumber(c.phone); });
+  }
+  if(S.waCtx && S.waCtx.length){
+    S.waCtx = S.waCtx.filter(function(c){ return !isDemoNumber(c.phone); });
+  }
+  save();
+
   var bar=document.getElementById('sbar'), stat=document.getElementById('sstat');
   if(bar){
     setTimeout(function(){bar.style.width='55%';if(stat)stat.textContent='Loading contacts engine...';},600);
     setTimeout(function(){bar.style.width='88%';if(stat)stat.textContent='Starting AI brain...';},1300);
     setTimeout(function(){bar.style.width='100%';if(stat)stat.textContent='Ready!';},2100);
   }
-  if(S.cur && S.cur!==1){
+  if(S.cur && S.cur!==1 && S.cur!==24){
     setTimeout(function(){ G(S.cur); },100);
+  } else {
+    setTimeout(function(){ G(7); }, 2200);
   }
   refreshDash();
   autoLoadDeviceContacts();
