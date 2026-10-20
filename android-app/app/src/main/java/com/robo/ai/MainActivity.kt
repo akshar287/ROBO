@@ -56,19 +56,49 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Auto start background service
         startRoboService()
 
-        // Listen for InCallService answer / disconnect events
-        RoboInCallService.onCallActiveListener = {
-            runOnUiThread {
-                Log.d("ROBO_INCALL", "RoboInCallService: Call is answered by recipient!")
-                inCallSpeechJob?.cancel()
-                webView.evaluateJavascript("if (window.onCallAnswered) window.onCallAnswered();", null)
+        // Listen for phone call state changes
+        setupCallStateListener()
+    }
+
+    private fun setupCallStateListener() {
+        try {
+            val tm = getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                tm?.registerTelephonyCallback(
+                    mainExecutor,
+                    object : android.telephony.TelephonyCallback(), android.telephony.TelephonyCallback.CallStateListener {
+                        override fun onCallStateChanged(state: Int) {
+                            handleCallState(state)
+                        }
+                    }
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                tm?.listen(
+                    object : android.telephony.PhoneStateListener() {
+                        @Deprecated("Deprecated in Java")
+                        override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                            handleCallState(state)
+                        }
+                    },
+                    android.telephony.PhoneStateListener.LISTEN_CALL_STATE
+                )
             }
+        } catch (e: Exception) {
+            Log.w("ROBO_CALL", "Failed to register TelephonyCallback: ${e.message}")
         }
-        RoboInCallService.onCallDisconnectedListener = {
-            runOnUiThread {
-                Log.d("ROBO_INCALL", "RoboInCallService: Call disconnected")
-                inCallSpeechJob?.cancel()
-                webView.evaluateJavascript("if (window.onCallEnded) window.onCallEnded();", null)
+    }
+
+    private fun handleCallState(state: Int) {
+        runOnUiThread {
+            when (state) {
+                android.telephony.TelephonyManager.CALL_STATE_OFFHOOK -> {
+                    Log.d("ROBO_CALL", "Telephony state: OFFHOOK (call active)")
+                }
+                android.telephony.TelephonyManager.CALL_STATE_IDLE -> {
+                    Log.d("ROBO_CALL", "Telephony state: IDLE (call ended)")
+                    webView.evaluateJavascript("if (window.onCallEnded) window.onCallEnded();", null)
+                }
             }
         }
     }

@@ -27,9 +27,26 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <!-- Package query permission for launching installed apps & Play Store (Android 11+) -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesCondition" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.CALL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -58,6 +75,9 @@
         <package android:name="com.google.android.calculator" />
         <package android:name="com.google.android.contacts" />
         <package android:name="com.google.android.dialer" />
+        <package android:name="com.samsung.android.dialer" />
+        <package android:name="com.android.phone" />
+        <package android:name="com.android.server.telecom" />
         <package android:name="com.google.android.apps.messaging" />
         <package android:name="com.google.android.apps.docs" />
         <package android:name="com.instagram.android" />
@@ -92,16 +112,6 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-
-        <!-- In-Call Service to detect when outgoing calls are answered by recipient -->
-        <service
-            android:name=".RoboInCallService"
-            android:permission="android.permission.BIND_INCALL_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.telecom.InCallService" />
-            </intent-filter>
-        </service>
 
         <!-- Boot Receiver to keep ROBO alive after device restarts -->
         <receiver

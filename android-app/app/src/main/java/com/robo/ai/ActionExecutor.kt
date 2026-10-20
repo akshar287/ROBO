@@ -6,8 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.telecom.TelecomManager
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -156,35 +158,36 @@ object ActionExecutor {
 
     /**
      * Dials phone number using Android native dialer (user taps Call to confirm).
-     * If phoneNumber is empty, opens blank dialpad safely without crashing.
+     * Uses Uri.fromParts to prevent URI corruption and tries multiple dialer intents.
      */
     fun dialPhone(context: Context, phoneNumber: String): Boolean {
-        return try {
-            val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
-            val dialIntent = if (cleanPhone.isNotEmpty()) {
-                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
-            } else {
-                Intent(Intent.ACTION_DIAL)
-            }
-            dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(dialIntent)
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Error dialing phone: ${e.message}")
+        val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
+        val telUri = if (cleanPhone.isNotEmpty()) Uri.fromParts("tel", cleanPhone, null) else null
+
+        val intents = mutableListOf<Intent>()
+        if (telUri != null) {
+            intents.add(Intent(Intent.ACTION_DIAL, telUri))
+            intents.add(Intent(Intent.ACTION_VIEW, telUri))
+        }
+        intents.add(Intent(Intent.ACTION_DIAL))
+        intents.add(Intent(Intent.ACTION_VIEW, Uri.parse("tel:")))
+
+        for (intent in intents) {
             try {
-                val fallbackIntent = Intent(Intent.ACTION_DIAL)
-                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(fallbackIntent)
-                true
-            } catch (e2: Exception) {
-                false
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                Log.d(TAG, "Successfully started dialer intent: ${intent.action}")
+                return true
+            } catch (e: Exception) {
+                Log.w(TAG, "Dial intent ${intent.action} failed: ${e.message}")
             }
         }
+        return false
     }
 
     /**
-     * Places a DIRECT phone call immediately (requires CALL_PHONE runtime permission).
-     * Rings directly on cellular network without requiring manual button tap.
+     * Places a DIRECT cellular phone call immediately on the network.
+     * Uses TelecomManager.placeCall -> Intent.ACTION_CALL -> Intent.ACTION_DIAL fallback.
      */
     fun callPhoneDirect(context: Context, phoneNumber: String): Boolean {
         return try {
@@ -209,27 +212,44 @@ object ActionExecutor {
                 else -> "+$cleanDigits"
             }
 
-            // Check CALL_PHONE permission
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            val telUri = Uri.fromParts("tel", formattedPhone, null)
+
+            // Tier 1: Try TelecomManager.placeCall (Official Android API)
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    val tm = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
+                    if (tm != null) {
+                        Log.d(TAG, "Placing direct cellular call via TelecomManager to $formattedPhone")
+                        tm.placeCall(telUri, Bundle())
+                        return true
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "TelecomManager.placeCall failed: ${e.message}, trying ACTION_CALL")
+                }
+
+                // Tier 2: Try Intent.ACTION_CALL
+                try {
+                    val callIntent = Intent(Intent.ACTION_CALL, telUri).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    Log.d(TAG, "Placing direct cellular call via ACTION_CALL to $formattedPhone")
+                    context.startActivity(callIntent)
+                    return true
+                } catch (e: Exception) {
+                    Log.w(TAG, "ACTION_CALL failed: ${e.message}, falling back to dialer")
+                }
+            } else {
                 Log.w(TAG, "CALL_PHONE permission not granted at runtime! Requesting on Activity...")
                 if (context is Activity) {
                     ActivityCompat.requestPermissions(context, arrayOf(Manifest.permission.CALL_PHONE), 102)
                 }
-                dialPhone(context, formattedPhone)
-                return false
             }
 
-            Log.d(TAG, "Placing ACTUAL direct cellular call to: $formattedPhone")
-            val callIntent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$formattedPhone"))
-            callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(callIntent)
+            // Tier 3: Fallback to ACTION_DIAL (never fails, opens native dialpad with number pre-filled)
+            dialPhone(context, formattedPhone)
             true
-        } catch (e: SecurityException) {
-            Log.e(TAG, "CALL_PHONE permission denied by system: ${e.message} — falling back to dialer")
-            dialPhone(context, phoneNumber)
-            false
         } catch (e: Exception) {
-            Log.e(TAG, "Error placing direct call: ${e.message}")
+            Log.e(TAG, "Error in callPhoneDirect: ${e.message}")
             dialPhone(context, phoneNumber)
             false
         }

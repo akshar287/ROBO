@@ -562,15 +562,20 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <span id="inCallAiSource" style="font-size:10px;color:#64748B;background:#1E293B;padding:2px 8px;border-radius:10px;">Ollama AI</span>
   </div>
 
-  <!-- Answer Waiting Banner: shown while waiting for Mummy to answer -->
-  <div id="inCallWaitBanner" style="display:flex;align-items:center;justify-content:space-between;background:rgba(34,211,238,.08);border-bottom:1px solid rgba(34,211,238,.2);padding:10px 16px;">
+  <!-- Answer Waiting Banner: shown while waiting for recipient to answer -->
+  <div id="inCallWaitBanner" style="display:flex;align-items:center;justify-content:space-between;background:rgba(34,211,238,.08);border-bottom:1px solid rgba(34,211,238,.2);padding:10px 16px;flex-wrap:wrap;gap:8px;">
     <div style="display:flex;align-items:center;gap:8px;">
       <span class="dot dot-y" id="waitDot"></span>
-      <span id="inCallWaitText" style="font-size:12px;font-weight:700;color:#FCD34D;">Waiting for answer (Speaking in 8s)...</span>
+      <span id="inCallWaitText" style="font-size:12px;font-weight:700;color:#FCD34D;">Waiting for answer (12s)...</span>
     </div>
-    <button onclick="triggerInCallGreetingManual()" style="padding:6px 14px;border-radius:12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:11px;font-weight:800;border:none;cursor:pointer;box-shadow:0 0 12px rgba(16,185,129,.35);">
-      🟢 Answered - Greet Now
-    </button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button onclick="triggerInCallDial()" style="padding:6px 12px;border-radius:12px;background:#1E293B;border:1px solid #38BDF8;color:#38BDF8;font-size:11px;font-weight:700;cursor:pointer;">
+        📞 Open Dialer
+      </button>
+      <button onclick="triggerInCallGreetingManual()" style="padding:6px 14px;border-radius:12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:11px;font-weight:800;border:none;cursor:pointer;box-shadow:0 0 12px rgba(16,185,129,.35);">
+        🟢 Answered - Greet Now
+      </button>
+    </div>
   </div>
 
   <!-- Real-Time Conversational Bubbles Log -->
@@ -1272,6 +1277,16 @@ function speakInCallGreeting(){
 
 function triggerInCallGreetingManual(){
   speakInCallGreeting();
+}
+
+function triggerInCallDial(){
+  if(inCallSession.contact && inCallSession.contact.phone && window.AndroidBridge){
+    AndroidBridge.dialPhone(inCallSession.contact.phone);
+  } else if(inCallSession.contact && window.AndroidBridge){
+    AndroidBridge.dialPhone(inCallSession.contact.name);
+  } else if(window.AndroidBridge){
+    AndroidBridge.dialPhone('');
+  }
 }
 
 window.onCallAnswered = function(){
