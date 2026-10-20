@@ -828,6 +828,7 @@ body.light-theme .grad-text {
 // ═══════════ STATE ═══════════
 var S = {
   cur: 1, hist: [1],
+  signedIn: false,
   agentOn: true,
   name: 'Akshar', email: '', phone: '',
   contacts: [],
@@ -912,7 +913,7 @@ function G(n){
   }
   window.scrollTo(0,0);
 }
-function GB(){ if(S.hist.length>1){S.hist.pop();G(S.hist[S.hist.length-1]);}else{G(7);} }
+function GB(){ if(S.hist.length>1){S.hist.pop();G(S.hist[S.hist.length-1]);}else{G((S.signedIn&&S.email)?7:1);} }
 function bnav(n,id){ G(n); }
 
 // ═══════════ AUTH ═══════════
@@ -925,15 +926,30 @@ function authTab(t){
 function doLogin(){
   var e=document.getElementById('le').value.trim(), p=document.getElementById('lp').value.trim();
   if(!e||!p){showT('Enter email and password.');return;}
-  S.name=e.split('@')[0]; S.email=e; save(); showT('Welcome back!'); G(4);
+  S.name=e.split('@')[0]; S.email=e; S.signedIn=true; save();
+  showT('Welcome back, '+S.name+'!');
+  G(7);
+  refreshDash();
+  autoLoadDeviceContacts();
 }
 function doReg(){
   var n=document.getElementById('rn').value.trim(), e=document.getElementById('re').value.trim(), p=document.getElementById('rp').value.trim();
   if(!n||!e||!p){showT('Fill all fields.');return;}
   if(p.length<8){showT('Password needs 8+ chars.');return;}
-  S.name=n; S.email=e; save(); showT('Account created! Welcome, '+n+'!'); G(4);
+  S.name=n; S.email=e; S.signedIn=true; save();
+  showT('Account created! Welcome, '+n+'!');
+  G(7);
+  refreshDash();
+  autoLoadDeviceContacts();
 }
-function doLogout(){ S.email=''; S.name='User'; save(); G(3); }
+function doLogout(){
+  S.email='';
+  S.signedIn=false;
+  S.name='User';
+  save();
+  showT('Signed out successfully.');
+  G(1);
+}
 
 // ═══════════ CONTACTS ═══════════
 var COLORS=['#22D3EE','#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444','#06B6D4'];
@@ -963,12 +979,11 @@ function processContacts(list, silent){
     var ini=((c.name||'User').trim()).split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
     return {name:c.name, phone:c.phone, ini:ini, color:COLORS[i%COLORS.length]};
   });
-  if(!S.callCtx || S.callCtx.length === 0 || S.callCtx.some(function(c){ return isDemoNumber(c.phone); })){
-    S.callCtx = S.contacts.slice(0, 5);
-  }
-  if(!S.waCtx || S.waCtx.length === 0 || S.waCtx.some(function(c){ return isDemoNumber(c.phone); })){
-    S.waCtx = S.contacts.slice(0, 5);
-  }
+  // STRICT CONTACT RULE: Only contacts explicitly chosen by user remain in callCtx and waCtx
+  if(!S.callCtx) S.callCtx = [];
+  if(!S.waCtx) S.waCtx = [];
+  S.callCtx = S.callCtx.filter(function(c){ return !isDemoNumber(c.phone); });
+  S.waCtx = S.waCtx.filter(function(c){ return !isDemoNumber(c.phone); });
   save();
   var badge = document.getElementById('cbadge');
   if(badge){badge.textContent=S.contacts.length+' loaded';badge.className='badge b-green';}
@@ -976,6 +991,7 @@ function processContacts(list, silent){
   if(!silent) showT('Loaded '+S.contacts.length+' contacts!');
 }
 function autoLoadDeviceContacts(){
+  if(!S.signedIn || !S.email) return; // Strict: Never fetch contacts if not signed in
   if(window.AndroidBridge){
     try{ AndroidBridge.loadContacts(); }catch(e){}
     try{
@@ -1048,6 +1064,105 @@ function renderChips(id,contacts){
 }
 function closePicker(){ document.getElementById('pickerModal').classList.remove('show'); document.getElementById('pickerSearch').value=''; }
 
+// ═══════════ STRICT CONTACT SAFETY ENGINE ═══════════
+function cleanPhoneDigits(num){
+  if(!num) return '';
+  var d = String(num).replace(/[^0-9]/g, '');
+  return d.length > 10 ? d.slice(-10) : d;
+}
+
+function isAuthorizedContact(target, mode){
+  var list = (mode === 'wa') ? (S.waCtx || []) : (S.callCtx || []);
+  if(!list || !list.length) return false;
+  if(!target) return false;
+
+  var targetName = '';
+  var targetPhone = '';
+
+  if(typeof target === 'object' && target !== null){
+    targetName = (target.name || '').toLowerCase().trim();
+    targetPhone = cleanPhoneDigits(target.phone || '');
+  } else {
+    var str = String(target).trim();
+    var dig = cleanPhoneDigits(str);
+    if(dig.length >= 7){
+      targetPhone = dig;
+    }
+    targetName = str.toLowerCase();
+  }
+
+  // Family aliases expansion (English, Gujarati, Hindi)
+  var targetAliases = [targetName];
+  if(/mummy|mom|mother|maa|mataji|ba|ammi/i.test(targetName)){
+    targetAliases = ['mummy','mom','mother','maa','mataji','ba','ammi','mum','mammi','mami','મમ્મી','મમી','મા','બા','मम्मी','माँ','माताजी'];
+  } else if(/papa|dad|father|bapuji|pita|abbu|pappa/i.test(targetName)){
+    targetAliases = ['papa','dad','father','bapuji','pita','abbu','pappa','પપ્પા','પિતા','બાપુજી','पापा','पिता'];
+  }
+
+  for(var i=0; i<list.length; i++){
+    var item = list[i];
+    var itemName = (item.name || '').toLowerCase().trim();
+    var itemPhone = cleanPhoneDigits(item.phone || '');
+
+    // 1. Phone number match (last 10 digits)
+    if(targetPhone && itemPhone && targetPhone === itemPhone){
+      return true;
+    }
+
+    // 2. Direct name match
+    if(itemName && targetName){
+      if(itemName === targetName || itemName.indexOf(targetName) !== -1 || targetName.indexOf(itemName) !== -1){
+        return true;
+      }
+    }
+
+    // 3. Alias match
+    for(var a=0; a<targetAliases.length; a++){
+      var al = targetAliases[a];
+      if(itemName === al || itemName.indexOf(al) !== -1 || al.indexOf(itemName) !== -1){
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function handleSecurityBlock(target, mode){
+  var targetLabel = (typeof target === 'object' && target !== null) ? (target.name || target.phone || 'Contact') : (target || 'Contact');
+  var actionType = (mode === 'wa') ? 'WhatsApp message' : 'phone call';
+  var listType = (mode === 'wa') ? 'WhatsApp Contacts' : 'Calling Contacts';
+
+  var blockMsg = '⛔ Security Block: "' + targetLabel + '" is NOT in your authorized ' + listType + ' list!';
+  var voiceAlert = 'Action blocked. ' + targetLabel + ' is not in your authorized ' + (mode === 'wa' ? 'WhatsApp' : 'calling') + ' contacts list. Please authorize them in settings first.';
+
+  var vt = document.getElementById('vTrans');
+  var va = document.getElementById('vAction');
+  if(vt) vt.textContent = blockMsg;
+  if(va){
+    va.textContent = blockMsg;
+    va.style.display = 'block';
+    va.style.color = '#F87171';
+    va.style.background = 'rgba(239,68,68,.15)';
+    va.style.borderColor = 'rgba(239,68,68,.4)';
+  }
+
+  setDashReply('⛔ Security Block: Unauthorized ' + actionType);
+  showT('⛔ ' + targetLabel + ' is NOT authorized for ' + actionType + '!');
+  addHist('🛡️', 'Blocked ' + actionType + ' to ' + targetLabel, 'Blocked');
+
+  if(window.AndroidBridge){
+    try { AndroidBridge.speak(voiceAlert); } catch(e){}
+    try { AndroidBridge.showToast('Security Block: ' + targetLabel + ' not authorized'); } catch(e){}
+  }
+
+  setTimeout(function(){
+    if(confirm('Security Alert: "' + targetLabel + '" is not authorized.\n\nOnly selected contacts can be called or messaged by the AI agent.\n\nOpen contacts picker to authorize now?')){
+      openPicker(mode);
+    }
+  }, 600);
+}
+
 // ═══════════ SET CONTACT NUMBER MODAL LOGIC ═══════════
 var pendingSetNumTarget = 'Mummy';
 function openSetNumberModal(targetName){
@@ -1087,7 +1202,7 @@ function confirmSetNumber(){
     }
   }
   if(!found) S.contacts.unshift(ct);
-  S.callCtx = [ct];
+  if(!S.callCtx) S.callCtx = []; if(!S.callCtx.some(function(c){ return c.phone === clean; })) S.callCtx.push(ct);
   save();
   refreshDash();
   closeSetNumberModal();
@@ -1297,7 +1412,9 @@ function testOllamaConnection(){
 }
 
 window.onOllamaResult = function(callId, text){
-  if(callId === 'ping_test'){
+  if(callId === 'cmd_intent_parser'){
+    handleOllamaCommandResult(text);
+  } else if(callId === 'ping_test'){
     var reply = document.getElementById('ollamaTestReply');
     if(reply){
       reply.textContent = 'Ollama connected! Model: ' + S.ollamaModel + ' — "' + text.slice(0,40) + '"';
@@ -1309,14 +1426,20 @@ window.onOllamaResult = function(callId, text){
 };
 
 window.onOllamaError = function(callId, err){
-  if(callId === 'ping_test'){
+  if(callId === 'cmd_intent_parser'){
+    console.warn("Ollama parser returned error:", err);
+    var pending = window._pendingCmd;
+    if(pending && (Date.now() - pending.time < 15000)){
+      executeLocalCommandFallback(pending.text, pending.fromVoice);
+      window._pendingCmd = null;
+    }
+  } else if(callId === 'ping_test'){
     var reply = document.getElementById('ollamaTestReply');
     if(reply){
       reply.textContent = 'Ollama unreachable (' + err + '). Will use Built-in Neural Engine.';
       reply.style.color = '#F59E0B';
     }
   } else if(callId === 'in_call_ai'){
-    // Fallback to local instant neural engine
     handleInCallAiFallback();
   }
 };
@@ -1414,6 +1537,12 @@ function dialCall(target, speechScript){
     }
   }
 
+  // STRICT CONTACT SAFETY CHECK
+  if(!isAuthorizedContact(dialTarget || target, 'call')){
+    handleSecurityBlock(target, 'call');
+    return;
+  }
+
   var digits = dialTarget.replace(/[^0-9+]/g, '');
   if(digits.length < 7 && /mummy|mom|maa|mother|mataji|papa|dad|father/i.test(target)){
     openSetNumberModal(target);
@@ -1466,674 +1595,23 @@ function dialCall(target, speechScript){
 
 function launchInCallAgent(){
   if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
-  var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : {name:'Mummy', phone:''});
+  if(!S.callCtx || !S.callCtx.length){
+    showT('No authorized call contact selected. Tap Manage to add.');
+    setTimeout(function(){ openPicker('call'); }, 800);
+    return;
+  }
+  var ct = S.callCtx[0];
   startRealTimeInCall(ct, 'Talk on behalf of Akshar');
 }
 
-function startRealTimeInCall(contact, initialGoal){
-  if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
-
-  // Ensure contact is structured
-  if(!contact) contact = { name: 'Mummy', phone: '' };
-  if(typeof contact === 'string') contact = { name: contact, phone: '' };
-
-  // Filter out any dummy demo numbers
-  if(isDemoNumber(contact.phone)){
-    contact.phone = '';
-  }
-
-  // Resolve REAL phone number from Android device contacts
-  if(!contact.phone && window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
-    try {
-      var bridgeNum = AndroidBridge.getPhoneNumber(contact.name);
-      if(bridgeNum && !isDemoNumber(bridgeNum)){
-        contact.phone = bridgeNum;
-      }
-    } catch(e){}
-  }
-
-  // Also check selected calling contacts or loaded contacts
-  if(!contact.phone){
-    var pool = (S.callCtx || []).concat(S.contacts || []);
-    var aliases = [contact.name.toLowerCase()];
-    if(/mummy|mom|mother|maa|mataji|ba|ammi/i.test(contact.name)){
-      aliases = ['mummy','mom','mother','maa','mataji','ba','ammi','mum','mammi','mami','મમ્મી','મમી','મા','બા','मम्मी','माँ','माताजी'];
-    } else if(/papa|dad|father|bapuji|pita|abbu|pappa/i.test(contact.name)){
-      aliases = ['papa','dad','father','bapuji','pita','abbu','pappa','પપ્પા','પિતા','બાપુજી','पापा','पिता'];
-    }
-    for(var i=0; i<pool.length; i++){
-      var cName = (pool[i].name || '').toLowerCase();
-      var matched = false;
-      for(var a=0; a<aliases.length; a++){
-        var al = aliases[a];
-        if(cName === al || cName.indexOf(al) !== -1 || al.indexOf(cName) !== -1){
-          matched = true; break;
-        }
-      }
-      if(matched && pool[i].phone && !isDemoNumber(pool[i].phone)){
-        contact.phone = pool[i].phone;
-        break;
-      }
-    }
-  }
-
-  // 3. If STILL no phone number found, prompt Akshar to enter it or pick contact!
-  if(!contact.phone){
-    openSetNumberModal(contact.name);
-    if(window.AndroidBridge){
-      AndroidBridge.dialPhone('');
-    }
-    return;
-  }
-
-  inCallSession.active = true;
-  inCallSession.contact = contact;
-  inCallSession.initialGoal = initialGoal || 'Talk on behalf of Akshar';
-  inCallSession.seconds = 0;
-  inCallSession.greeted = false;
-  inCallSession.dialogueHistory = [];
-  inCallSession.takeover = false;
-
-  // Background update Screen 24 elements without forcing navigation
-  var inName = document.getElementById('inCallName');
-  if(inName) inName.textContent = contact.name;
-  var inPhone = document.getElementById('inCallPhone');
-  if(inPhone) inPhone.textContent = contact.phone || 'Direct Cellular Call';
-  var inTimer = document.getElementById('inCallTimer');
-  if(inTimer) inTimer.textContent = '00:00';
-  var inStream = document.getElementById('inCallDialogueStream');
-  if(inStream) inStream.innerHTML = '';
-
-  var waitBanner = document.getElementById('inCallWaitBanner');
-  var waitText = document.getElementById('inCallWaitText');
-  if(waitBanner) waitBanner.style.display = 'flex';
-  if(waitText) waitText.textContent = '⏳ Dialing ' + contact.name + ' (' + contact.phone + ')... Waiting for answer';
-  setInCallStatus('Dialing ' + contact.name + ' on phone dialpad...', false);
-
-  showT('📞 Opening dialpad & calling ' + contact.name + ' (' + contact.phone + ')...');
-
-  // Start call duration timer
-  if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
-  inCallSession.timerInterval = setInterval(function(){
-    inCallSession.seconds++;
-    var m = Math.floor(inCallSession.seconds/60), s = inCallSession.seconds%60;
-    if(inTimer) inTimer.textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
-  }, 1000);
-
-  // Trigger ACTUAL cellular phone call in Android, PASSING THE REAL PHONE NUMBER!
-  var dialTarget = (contact.phone && !isDemoNumber(contact.phone)) ? contact.phone : contact.name;
-  if(window.AndroidBridge){
-    AndroidBridge.enableSpeakerphone(true);
-    AndroidBridge.callOrDial(dialTarget, inCallSession.initialGoal);
-  }
-
-  addHist('🗣️', 'In-Call 2-Way AI Call: ' + contact.name + ' (' + contact.phone + ')', 'Call Active');
-}
-
-function speakInCallGreeting(){
-  if(!inCallSession.active || inCallSession.greeted) return;
-  inCallSession.greeted = true;
-
-  if(inCallSession.countdownInterval){
-    clearInterval(inCallSession.countdownInterval);
-    inCallSession.countdownInterval = null;
-  }
-
-  var waitBanner = document.getElementById('inCallWaitBanner');
-  if(waitBanner){
-    waitBanner.style.display = 'none';
-  }
-
-  var cName = inCallSession.contact ? inCallSession.contact.name : 'Mummy';
-  var customNote = inCallSession.initialGoal && inCallSession.initialGoal !== 'Talk on behalf of Akshar' 
-    ? inCallSession.initialGoal 
-    : "Akshar asked me to talk with you";
-
-  // Exact Swaminarayan greeting requested by Akshar
-  var greeting = "Jay Swaminarayan " + cName + "! I am ROBO. I am talking to you on behalf of Akshar. " + customNote + ". Kem cho, how are you doing today?";
-
-  addInCallBubble('robo', greeting);
-  setInCallStatus('ROBO Speaking...', true);
-
-  if(window.AndroidBridge){
-    if(typeof AndroidBridge.triggerGreetingNow === 'function'){
-      AndroidBridge.triggerGreetingNow(greeting);
-    } else if(typeof AndroidBridge.speakInCall === 'function'){
-      AndroidBridge.speakInCall(greeting);
-    } else {
-      AndroidBridge.speak(greeting);
-    }
-  }
-}
-
-function triggerInCallGreetingManual(){
-  speakInCallGreeting();
-}
-
-function triggerInCallDial(){
-  if(inCallSession.contact && inCallSession.contact.phone && window.AndroidBridge){
-    AndroidBridge.dialPhone(inCallSession.contact.phone);
-  } else if(inCallSession.contact && window.AndroidBridge){
-    AndroidBridge.dialPhone(inCallSession.contact.name);
-  } else if(window.AndroidBridge){
-    AndroidBridge.dialPhone('');
-  }
-}
-
-window.onCallAnswered = function(){
-  console.log("ROBO: Call answered by recipient!");
-  if(inCallSession.active && !inCallSession.greeted){
-    // Short 600ms grace period so recipient can place phone to ear
-    setTimeout(function(){
-      if(inCallSession.active && !inCallSession.greeted){
-        speakInCallGreeting();
-      }
-    }, 600);
-  }
-};
-
-window.onCallEnded = function(){
-  console.log("ROBO: Call disconnected");
-  if(inCallSession.active){
-    endInCallSession();
-  }
-};
-
-function addInCallBubble(speaker, text){
-  inCallSession.dialogueHistory.push({speaker: speaker, text: text});
-  var stream = document.getElementById('inCallDialogueStream');
-  if(!stream) return;
-
-  var bubble = document.createElement('div');
-  bubble.style.cssText = speaker === 'robo' ? 'display:flex;gap:8px;align-items:flex-start;' : 'display:flex;gap:8px;justify-content:flex-end;align-items:flex-start;';
-  
-  if(speaker === 'robo'){
-    bubble.innerHTML = '<div style="width:28px;height:28px;border-radius:8px;background:rgba(34,211,238,.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>' +
-      '<div class="cb-bot"><span style="font-size:10px;font-weight:700;color:#22D3EE;display:block;margin-bottom:2px;">ROBO AI</span>' + esc(text) + '</div>';
-  } else {
-    var cName = inCallSession.contact ? inCallSession.contact.name : 'Recipient';
-    bubble.innerHTML = '<div class="cb-caller"><span style="font-size:10px;font-weight:700;color:#93C5FD;display:block;margin-bottom:2px;">' + cName + '</span>' + esc(text) + '</div>' +
-      '<div style="width:28px;height:28px;border-radius:8px;background:rgba(59,130,246,.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</div>';
-  }
-  stream.appendChild(bubble);
-  stream.scrollTop = stream.scrollHeight;
-}
-
-function setInCallStatus(status, isSpeaking){
-  var txt = document.getElementById('inCallStatusText');
-  var wave = document.getElementById('inCallWaveContainer');
-  if(txt) txt.textContent = status;
-  if(wave) wave.style.display = isSpeaking ? 'inline-block' : 'none';
-}
-
-// Called when ROBO finishes speaking an utterance in the call
-window.onTtsFinished = function(utteranceId){
-  if(inCallSession.active && !inCallSession.takeover){
-    var cName = inCallSession.contact ? inCallSession.contact.name : 'Caller';
-    setInCallStatus('Listening to ' + cName + '...', false);
-    // 400ms pause to ensure audio clear, then open mic to capture caller's response
-    setTimeout(function(){
-      if(inCallSession.active && !inCallSession.takeover && window.AndroidBridge){
-        AndroidBridge.startVoice();
-      }
-    }, 400);
-  }
-};
-
-// When speech recognition captures what the other person on the call said
-function handleCallerSpeech(callerText){
-  if(!inCallSession.active) return;
-  addInCallBubble('caller', callerText);
-  setInCallStatus('AI Brain Thinking (Ollama)...', false);
-
-  if(inCallSession.takeover){
-    // User took over call, do not auto-respond
-    return;
-  }
-
-  inCallSession.pendingCallerText = callerText;
-
-  // Try querying Ollama for response, with fallback to neural engine
-  var cName = inCallSession.contact ? inCallSession.contact.name : 'Mummy';
-  var prompt = "You are ROBO, a polite, respectful personal AI agent speaking on a phone call with " + cName + " on behalf of Akshar.\n" +
-    (inCallSession.initialGoal ? "Akshar's context: " + inCallSession.initialGoal + ".\n" : "") +
-    "Conversation history:\n" +
-    inCallSession.dialogueHistory.slice(-4).map(function(d){ return (d.speaker === 'robo' ? 'ROBO: ' : cName + ': ') + d.text; }).join("\n") + "\n" +
-    cName + " just said: \"" + callerText + "\".\n" +
-    "Give a polite, respectful 1-sentence reply as ROBO on behalf of Akshar. If " + cName + " speaks in Gujarati, reply in Gujarati and include Jay Swaminarayan. Maximum 20 words.";
-
-  if(window.AndroidBridge && typeof AndroidBridge.queryOllama === 'function'){
-    var u = S.ollamaUrl || 'http://10.0.2.2:11434';
-    var m = S.ollamaModel || 'llama3';
-    AndroidBridge.queryOllama(u, m, prompt, 'in_call_ai');
-  } else {
-    setTimeout(handleInCallAiFallback, 600);
-  }
-}
-
-function handleInCallAiResponse(aiText){
-  if(!inCallSession.active) return;
-  var cleanReply = aiText.trim();
-  addInCallBubble('robo', cleanReply);
-  setInCallStatus('ROBO Speaking...', true);
-  if(window.AndroidBridge){
-    if(typeof AndroidBridge.speakInCall === 'function'){
-      AndroidBridge.speakInCall(cleanReply);
-    } else {
-      AndroidBridge.speak(cleanReply);
-    }
-  }
-}
-
-// Built-in intelligent conversational engine (Fallback for 0ms latency / offline)
-function handleInCallAiFallback(){
-  if(!inCallSession.active) return;
-  var text = (inCallSession.pendingCallerText || '').toLowerCase();
-  var cName = inCallSession.contact ? inCallSession.contact.name : 'Mummy';
-  var reply = "";
-
-  if(/kem cho|kya che|sarav|maja ma|bolo|majama/.test(text)){
-    reply = "Jay Swaminarayan " + cName + "! Akshar majama che, ane Akshar e mane tamari sathe vaat karva kidhu che. Tamne koi sahayata joiye che?";
-  } else if(/kaise ho|kya kar rahe|boliye|bolo|haan/.test(text)){
-    reply = "Jay Swaminarayan " + cName + "! Akshar ne mujhe aapse baat karne ke liye kaha hai. Akshar thodi der me aapse connect karenge!";
-  } else if(/hello|hi|who is this|who are you|kon|kaun/.test(text)){
-    reply = "Jay Swaminarayan! I am ROBO AI, Akshar's personal assistant calling on his behalf. Akshar asked me to talk with you!";
-  } else if(/reach|home|time|khana|dinner|aav|aave|ghar/.test(text)){
-    reply = "Akshar asked me to convey that he is on the way and will reach shortly!";
-  } else if(/swaminarayan|jay/.test(text)){
-    reply = "Jay Swaminarayan " + cName + "! Akshar e tamne yaad karavya che!";
-  } else if(/ok|ha|thik|bye|saras|barobar|saru/.test(text)){
-    reply = "Saras " + cName + "! I will let Akshar know right away. Jay Swaminarayan!";
-  } else {
-    reply = "Ji " + cName + ", I have noted this down for Akshar. Akshar will call you directly if needed!";
-  }
-
-  handleInCallAiResponse(reply);
-}
-
-function sendInCallCustom(){
-  var inp = document.getElementById('inCallCustomIn');
-  var val = inp ? inp.value.trim() : '';
-  if(!val || !inCallSession.active) return;
-  inp.value = '';
-
-  addInCallBubble('robo', val);
-  setInCallStatus('ROBO Speaking...', true);
-  if(window.AndroidBridge){
-    if(typeof AndroidBridge.speakInCall === 'function'){
-      AndroidBridge.speakInCall(val);
-    } else {
-      AndroidBridge.speak(val);
-    }
-  }
-}
-
-function triggerInCallListen(){
-  if(!inCallSession.active) return;
-  setInCallStatus('Listening...', false);
-  if(window.AndroidBridge){
-    AndroidBridge.startVoice();
-  }
-}
-
-function toggleTakeover(){
-  inCallSession.takeover = !inCallSession.takeover;
-  var btn = document.getElementById('takeoverText');
-  if(inCallSession.takeover){
-    btn.textContent = 'Resume AI';
-    setInCallStatus('User In Control (AI Muted)', false);
-    showT('AI muted — you can now speak directly on the call!');
-  } else {
-    btn.textContent = 'Take Over';
-    setInCallStatus('AI Resumed — Listening...', false);
-    if(window.AndroidBridge) AndroidBridge.startVoice();
-  }
-}
-
-function endInCallSession(){
-  if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
-  if(inCallSession.countdownInterval) clearInterval(inCallSession.countdownInterval);
-  inCallSession.active = false;
-
-  var waitBanner = document.getElementById('inCallWaitBanner');
-  if(waitBanner) waitBanner.style.display = 'none';
-
-  // Restore speakerphone
-  if(window.AndroidBridge && typeof AndroidBridge.enableSpeakerphone === 'function'){
-    AndroidBridge.enableSpeakerphone(false);
-  }
-
-  // Save session transcript in Task History
-  var cName = inCallSession.contact ? inCallSession.contact.name : 'Contact';
-  var turnsCount = inCallSession.dialogueHistory.length;
-  addHist('🗣️', 'Call with ' + cName + ' (' + turnsCount + ' dialog turns, ' + inCallSession.seconds + 's)', 'Completed');
-
-  showT('Call session ended. Conversation saved in History!');
-  G(7);
-}
-
-// ═══════════ COMMAND PROCESSOR ═══════════
-var APPS = {
-  'youtube':'com.google.android.youtube','whatsapp':'com.whatsapp',
-  'chrome':'com.android.chrome','gmail':'com.google.android.gm',
-  'maps':'com.google.android.apps.maps','camera':'com.google.android.GoogleCamera',
-  'playstore':'com.android.vending','play store':'com.android.vending',
-  'alarm':'com.google.android.deskclock','clock':'com.google.android.deskclock',
-  'timer':'com.google.android.deskclock','settings':'com.android.settings',
-  'photos':'com.google.android.apps.photos','gallery':'com.google.android.apps.photos',
-  'calendar':'com.google.android.calendar','calculator':'com.google.android.calculator',
-  'contacts':'com.google.android.contacts','phone':'com.google.android.dialer',
-  'dialer':'com.google.android.dialer','messages':'com.google.android.apps.messaging',
-  'drive':'com.google.android.apps.docs','instagram':'com.instagram.android',
-  'spotify':'com.spotify.music','netflix':'com.netflix.mediaclient',
-  'telegram':'org.telegram.messenger','twitter':'com.twitter.android',
-  'facebook':'com.facebook.katana','zoom':'us.zoom.videomeetings',
-  'paytm':'net.one97.paytm','gpay':'com.google.android.apps.nbu.paisa.user',
-  'phonepe':'com.phonepe.app','swiggy':'in.swiggy.android','zomato':'com.application.zomato',
-  'amazon':'com.amazon.mShop.android.shopping','flipkart':'com.flipkart.android'
-};
-
-function findContact(text, pool){
-  var lower = text.toLowerCase();
-  if(!pool||!pool.length) pool = S.contacts;
-  for(var i=0;i<pool.length;i++){
-    if(lower.indexOf(pool[i].name.toLowerCase())!==-1) return pool[i];
-  }
-  var words = lower.split(/\s+/);
-  for(var w=0;w<words.length;w++){
-    if(words[w].length<3) continue;
-    for(var i=0;i<pool.length;i++){
-      if(pool[i].name.toLowerCase().indexOf(words[w])!==-1) return pool[i];
-    }
-  }
-  return null;
-}
-
-function extractMsg(text){
-  var separators = [' — ',' -- ',' message ',' saying ',' that ',' tell him ',' tell her ',' bol '];
-  for(var i=0;i<separators.length;i++){
-    var idx = text.toLowerCase().indexOf(separators[i]);
-    if(idx!==-1) return text.substring(idx+separators[i].length).trim();
-  }
-  return '';
-}
-
-function processCmd(text, fromVoice){
-  if(!text) return;
-  var lower = text.toLowerCase().trim();
-  if(!lower) return;
-
-  var vt = document.getElementById('vTrans');
-  var va = document.getElementById('vAction');
-  if(vt) vt.textContent = '"'+text+'"';
-  // ─── 0.1 THEME VOICE COMMANDS ───
-  var isLightCmd = /\b(light\s+theme|light\s+mode|white\s+theme|white\s+mode|day\s+mode|light\s+karo)\b/i.test(lower);
-  var isDarkCmd = /\b(dark\s+theme|dark\s+mode|black\s+theme|black\s+mode|night\s+mode|dark\s+karo)\b/i.test(lower);
-  if(isLightCmd){
-    applyTheme('light');
-    save();
-    var msg = '☀️ Switched to Light Theme!';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent=msg;va.style.display='block';}
-    setDashReply(msg);
-    showT(msg);
-    if(window.AndroidBridge) AndroidBridge.speak('Switched to Light Theme');
-    return;
-  }
-  if(isDarkCmd){
-    applyTheme('dark');
-    save();
-    var msg = '🌙 Switched to Dark Theme!';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent=msg;va.style.display='block';}
-    setDashReply(msg);
-    showT(msg);
-    if(window.AndroidBridge) AndroidBridge.speak('Switched to Dark Theme');
-    return;
-  }
-
-  // ─── 0. VOICE AGENT ON / OFF COMMANDS ───
-  var isTurnOn = /\b(turn\s+on\s+agent|agent\s+on|activate\s+agent|start\s+agent|chalu\s+karo|resume\s+agent)\b/i.test(lower);
-  var isTurnOff = /\b(turn\s+off\s+agent|agent\s+off|pause\s+agent|stop\s+agent|deactivate\s+agent|bandh\s+karo)\b/i.test(lower);
-
-  if(isTurnOn){
-    S.agentOn = true;
-    save();
-    updateAgentUI();
-    var msg = '🟢 ROBO Agent is now ON and active!';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent=msg;va.style.display='block';}
-    setDashReply(msg);
-    showT(msg);
-    addHist('🟢', 'Agent Activated', 'Active');
-    if(window.AndroidBridge){
-      AndroidBridge.showToast('ROBO Agent Active');
-      AndroidBridge.speak('ROBO Agent is now ON and ready for commands.');
-    }
-    return;
-  }
-
-  if(isTurnOff){
-    S.agentOn = false;
-    save();
-    updateAgentUI();
-    var msg = '⏸️ ROBO Agent paused. Tasks will be blocked until turned ON.';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent=msg;va.style.display='block';}
-    setDashReply(msg);
-    showT(msg);
-    addHist('⏸️', 'Agent Paused', 'Paused');
-    if(window.AndroidBridge){
-      AndroidBridge.showToast('ROBO Agent Paused');
-      AndroidBridge.speak('ROBO Agent is paused. Tasks are disabled.');
-    }
-    return;
-  }
-
-  // ─── STRICT AGENT OFF CHECK ───
-  if(!S.agentOn){
-    var pauseMsg = '⛔ ROBO Agent is paused. Switch Agent ON at top right.';
-    if(vt) vt.textContent = pauseMsg;
-    if(va){va.textContent=pauseMsg;va.style.display='block';}
-    setDashReply(pauseMsg);
-    showT(pauseMsg);
-    if(window.AndroidBridge) AndroidBridge.speak('ROBO Agent is paused. Please turn Agent ON to execute tasks.');
-    return;
-  }
-
-  // ─── 1. DIALPAD / DIALER INTENT ───
-  var isDialpad = /\b(dialpad|dialer|keypad|open\s+dialpad|open\s+dialer|open\s+phone|dialpad\s+kholo|dialer\s+kholo)\b/i.test(lower);
-  if(isDialpad){
-    var msg = 'Opening phone dialpad...';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent='📞 '+msg;va.style.display='block';}
-    setDashReply('📞 Opening Dialpad...');
-    addHist('📞', 'Opened Phone Dialpad', 'Done');
-    if(window.AndroidBridge){
-      AndroidBridge.speak('Opening phone dialpad');
-      AndroidBridge.dialPhone('');
-    } else {
-      showT(msg);
-    }
-    return;
-  }
-
-  // ─── 2. CALL & TALK ON ACTIVE PHONE CALL INTENT ───
-  var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/i.test(lower) && /\b(call|phone|ring|dial|lagav|lagao|fone)\b/i.test(lower))
-                     || /\b(talk with|talk to|baat karo|vaat kar|vaat karo)\b/i.test(lower)
-                     || /\b(call and talk|call & talk|call her and talk|call mummy and talk|call mummy talk)\b/i.test(lower);
-
-  if(isTalkBehalf){
-    var target = extractCallTarget(text);
-    var customNote = extractMsg(text);
-
-    var phone = '';
-    if(window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
-      try {
-        var bridgeNum = AndroidBridge.getPhoneNumber(target);
-        if(bridgeNum && !isDemoNumber(bridgeNum)) phone = bridgeNum;
-      } catch(e){}
-    }
-    if(!phone || isDemoNumber(phone)){
-      var pool = (S.callCtx || []).concat(S.contacts || []);
-      var targetAliases = [target.toLowerCase()];
-      if(/mummy|mom|mother|maa|mataji|ba|ammi/i.test(target)){
-        targetAliases = ['mummy','mom','mother','maa','mataji','ba','ammi','mum','mammi','mami','મમ્મી','મમી','મા','બા','मम्मी','माँ','माताजी'];
-      } else if(/papa|dad|father|bapuji|pita|abbu|pappa/i.test(target)){
-        targetAliases = ['papa','dad','father','bapuji','pita','abbu','pappa','પપ્પા','પિતા','બાપુજી','पापा','पिता'];
-      }
-      for(var i=0; i<pool.length; i++){
-        var cName = (pool[i].name || '').toLowerCase();
-        for(var a=0; a<targetAliases.length; a++){
-          var alias = targetAliases[a];
-          if(cName === alias || cName.indexOf(alias) !== -1 || alias.indexOf(cName) !== -1){
-            if(pool[i].phone && !isDemoNumber(pool[i].phone)){
-              phone = pool[i].phone;
-              target = pool[i].name;
-              break;
-            }
-          }
-        }
-        if(phone) break;
-      }
-    }
-    var ct = { name: target, phone: phone };
-
-    var msg = '📞 Calling ' + target + ' & talking on behalf of Akshar...';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent=msg;va.style.display='block';}
-    setDashReply(msg);
-    showT('Calling ' + target + ' — ROBO ready to talk!');
-
-    startRealTimeInCall(ct, customNote);
-    return;
-  }
-
-  // ─── 3. DIRECT CALL INTENT ───
-  var isCall = /\b(call|ring|phone|dial|phone kar|call kar)\b/.test(lower);
-  if(isCall){
-    var target = extractCallTarget(text);
-    var msg = 'Calling ' + target + ' directly...';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent='📞 '+msg;va.style.display='block';}
-    setDashReply('📞 Calling ' + target + '...');
-    addHist('📞', 'Called ' + target, 'Done');
-    if(window.AndroidBridge) AndroidBridge.speak('Calling ' + target);
-    dialCall(target, '');
-    return;
-  }
-
-  // ─── 4. WHATSAPP INTENT ───
-  var isWA = /\b(whatsapp|wa|watsapp|message|msg|send|chat)\b/.test(lower);
-  if(isWA){
-    var target = extractCallTarget(text);
-    var customMsg = extractMsg(text);
-    var isBehalf = /\b(behalf|talk|say|tell|bol|baat)\b/.test(lower);
-    var finalMsg = isBehalf 
-      ? ("Hello " + target + "! 🤖 This is ROBO AI Agent on behalf of Akshar: " + (customMsg || "Akshar asked me to connect with you. Please reply back to Akshar!"))
-      : (customMsg || ('Hello '+target+'!'));
-
-    var found = null;
-    for(var i=0; i<S.contacts.length; i++){
-      if(S.contacts[i].name.toLowerCase().indexOf(target.toLowerCase()) !== -1 ||
-         target.toLowerCase().indexOf(S.contacts[i].name.toLowerCase()) !== -1){
-        found = S.contacts[i]; break;
-      }
-    }
-    var phone = found ? found.phone : target.replace(/[^0-9+]/g, '');
-
-    var msg = 'Opening WhatsApp for ' + target + '...';
-    if(vt) vt.textContent = msg;
-    if(va){va.textContent='💬 '+msg;va.style.display='block';}
-    setDashReply('💬 WhatsApp → ' + target);
-    addHist('💬', 'WhatsApp: ' + target + (customMsg ? ' — "' + customMsg + '"' : ''), 'Sent');
-    if(window.AndroidBridge) {
-      AndroidBridge.speak('Sending WhatsApp to ' + target);
-      AndroidBridge.sendWhatsApp(phone, finalMsg);
-    } else {
-      showT('WhatsApp → ' + target + ': ' + finalMsg);
-    }
-    return;
-  }
-
-  // ─── 5. APP LAUNCH INTENT ───
-  var openMatch = lower.match(/(?:open|launch|start|show|jaav|khol)\s+(.+)/);
-  if(openMatch){
-    var rawApp = openMatch[1].trim();
-    var cleanApp = rawApp.replace(/\b(app|application)\b/g, '').trim();
-    if(cleanApp){
-      var appLower = cleanApp.toLowerCase();
-      if(appLower === 'dialpad' || appLower === 'dialer' || appLower === 'phone' || appLower === 'keypad'){
-        if(window.AndroidBridge) AndroidBridge.dialPhone('');
-        showT('Opening phone dialpad...');
-        addHist('📞', 'Opened Phone Dialpad', 'Done');
-        return;
-      }
-      var appName = cleanApp.charAt(0).toUpperCase() + cleanApp.slice(1);
-      var msg = 'Opening ' + appName + '...';
-      if(vt) vt.textContent = msg;
-      if(va){va.textContent='🚀 '+msg;va.style.display='block';}
-      setDashReply('🚀 Launching ' + appName);
-      addHist('🚀', 'Opened ' + appName, 'Done');
-      if(window.AndroidBridge){
-        AndroidBridge.speak('Opening ' + appName);
-        AndroidBridge.openApp(cleanApp);
-      } else {
-        showT('Opening ' + appName);
-      }
-      return;
-    }
-  }
-
-  var appKeys = Object.keys(APPS);
-  for(var k=0; k<appKeys.length; k++){
-    if(lower.indexOf(appKeys[k]) !== -1){
-      var appName = appKeys[k].charAt(0).toUpperCase() + appKeys[k].slice(1);
-      var msg = 'Opening ' + appName + '...';
-      if(vt) vt.textContent = msg;
-      if(va){va.textContent='🚀 '+msg;va.style.display='block';}
-      setDashReply('🚀 Launching ' + appName);
-      addHist('🚀', 'Opened ' + appName, 'Done');
-      if(window.AndroidBridge){
-        AndroidBridge.speak('Opening ' + appName);
-        AndroidBridge.openApp(appKeys[k]);
-      }
-      return;
-    }
-  }
-
-  // ─── 6. EMAIL INTENT ───
-  if(/\b(email|mail|gmail|inbox)\b/.test(lower)){
-    G(22); addHist('📧','Email assistant opened','Done'); return;
-  }
-
-  // ─── 7. HISTORY INTENT ───
-  if(/\b(history|tasks|previous|last)\b/.test(lower)){
-    G(23); return;
-  }
-
-  // ─── 8. SETTINGS INTENT ───
-  if(/\b(setting|settings|permission)\b/.test(lower)){
-    G(16); return;
-  }
-
-  // ─── FALLBACK ───
-  var reply='Understood: "'+text+'". Say "Call Mummy and talk with Mummy" or "Open Dialpad"!';
-  if(vt)vt.textContent=reply;
-  if(va){va.style.display='none';}
-  setDashReply(reply);
-}
-
-function setDashReply(msg){
-  var el=document.getElementById('dashReply'); if(!el)return;
-  el.textContent=msg;
-  setTimeout(function(){el.textContent='';},4500);
-}
-
-// ─── QUICK ACTIONS ───
 function quickCall(){
   if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
-  var ct = S.callCtx.length ? S.callCtx[0] : (S.contacts.length ? S.contacts[0] : {name:'Mummy', phone:''});
+  if(!S.callCtx || !S.callCtx.length){
+    showT('No authorized call contact selected. Tap Manage to add.');
+    setTimeout(function(){ openPicker('call'); }, 800);
+    return;
+  }
+  var ct = S.callCtx[0];
   var target = ct.name;
   setDashReply('📞 Calling ' + target + '...');
   showT('Calling ' + target + ' directly...');
@@ -2144,14 +1622,18 @@ function quickCall(){
 
 function quickWA(){
   if(!S.agentOn){ showT('⛔ ROBO Agent is paused. Switch Agent ON.'); return; }
-  if(S.waCtx.length===0){showT('No WhatsApp contact selected. Tap Manage to pick one.');setTimeout(function(){G(4);},1200);return;}
-  var ct=S.waCtx[0];
-  addHist('💬','WhatsApp: '+ct.name,'Sent');
+  if(!S.waCtx || !S.waCtx.length){
+    showT('No authorized WhatsApp contact selected. Tap Manage to add.');
+    setTimeout(function(){ openPicker('wa'); }, 800);
+    return;
+  }
+  var ct = S.waCtx[0];
+  addHist('💬', 'WhatsApp: ' + ct.name, 'Sent');
   if(window.AndroidBridge) {
     AndroidBridge.speak('Opening WhatsApp for ' + ct.name);
-    AndroidBridge.sendWhatsApp(ct.phone,'Hello '+ct.name+'!');
+    AndroidBridge.sendWhatsApp(ct.phone, 'Hello ' + ct.name + '!');
   } else {
-    showT('WhatsApp → '+ct.name);
+    showT('WhatsApp → ' + ct.name);
   }
 }
 
@@ -2283,7 +1765,7 @@ function showT(msg){
   setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2800);
 }
 
-// ─── SPLASH ───
+// ─── SPLASH & AUTHENTICATION LIFECYCLE ───
 window.addEventListener('DOMContentLoaded',function(){
   // Apply saved theme preference
   applyTheme(S.theme || 'dark');
@@ -2303,19 +1785,33 @@ window.addEventListener('DOMContentLoaded',function(){
   }
   save();
 
-  var bar=document.getElementById('sbar'), stat=document.getElementById('sstat');
-  if(bar){
-    setTimeout(function(){bar.style.width='55%';if(stat)stat.textContent='Loading contacts engine...';},600);
-    setTimeout(function(){bar.style.width='88%';if(stat)stat.textContent='Starting AI brain...';},1300);
-    setTimeout(function(){bar.style.width='100%';if(stat)stat.textContent='Ready!';},2100);
-  }
-  if(S.cur && S.cur!==1 && S.cur!==24){
-    setTimeout(function(){ G(S.cur); },100);
+  var isAuthed = !!(S.signedIn && S.email);
+  if(!isAuthed){
+    // STRICT FLOW: Not signed in yet -> Start strictly at Screen 1 (Splash)
+    S.cur = 1;
+    S.hist = [1];
+    G(1);
+    var bar=document.getElementById('sbar'), stat=document.getElementById('sstat');
+    if(bar){
+      setTimeout(function(){bar.style.width='60%';if(stat)stat.textContent='ROBO Conversational Engine ready';},600);
+      setTimeout(function(){bar.style.width='100%';if(stat)stat.textContent='Please sign in to continue';},1200);
+    }
+    // DO NOT auto-navigate to Dashboard
+    // DO NOT fetch device contacts
   } else {
-    setTimeout(function(){ G(7); }, 2200);
+    // Normal app flow after sign-in: Splash animation -> directly opens Dashboard
+    var bar=document.getElementById('sbar'), stat=document.getElementById('sstat');
+    if(bar){
+      setTimeout(function(){bar.style.width='55%';if(stat)stat.textContent='Loading contacts engine...';},500);
+      setTimeout(function(){bar.style.width='88%';if(stat)stat.textContent='Starting AI brain...';},1100);
+      setTimeout(function(){bar.style.width='100%';if(stat)stat.textContent='Welcome back, ' + (S.name || 'Akshar') + '!';},1600);
+    }
+    setTimeout(function(){
+      G(7);
+      refreshDash();
+      autoLoadDeviceContacts();
+    }, 1800);
   }
-  refreshDash();
-  autoLoadDeviceContacts();
 });
 </script>
 </body>
