@@ -1033,6 +1033,14 @@ function isDemoNumber(num){
 
 function extractCallTarget(text){
   var lower = text.toLowerCase();
+  // Check common relations aliases first
+  if(/mummy|mom|mother|maa|mataji|ba|ammi|મમ્મી|મમી|મા|બા|मम्मी|माँ|माताजी/i.test(lower)){
+    return 'Mummy';
+  }
+  if(/papa|dad|father|bapuji|pita|abbu|pappa|પપ્પા|પિતા|બાપુજી|पापा|पिता/i.test(lower)){
+    return 'Papa';
+  }
+
   // 1. Check in S.callCtx or S.contacts
   var pool = (S.callCtx && S.callCtx.length) ? S.callCtx : (S.contacts || []);
   for(var i=0; i<pool.length; i++){
@@ -1047,10 +1055,10 @@ function extractCallTarget(text){
   }
 
   // 2. Direct regex match after calling keywords
-  var m = text.match(/(?:call|dial|phone|ring|talk with|talk to)\s+([a-zA-Z0-9\u0A80-\u0AFF\u0900-\u097F]+)/i);
+  var m = text.match(/(?:call|dial|phone|ring|talk with|talk to|વાત કર|ફોન કર|बात करो|कॉल करो)\s+([a-zA-Z0-9\u0A80-\u0AFF\u0900-\u097F]+)/i);
   if(m && m[1]){
     var w = m[1].trim();
-    var stopWords = ['and','to','the','my','a','an','with','her','him','them','on','behalf','of','phone','call','me','karo','kar','che','ne','sathe'];
+    var stopWords = ['and','to','the','my','a','an','with','her','him','them','on','behalf','of','phone','call','me','karo','kar','che','ne','sathe','ko','se','aur','ane'];
     if(stopWords.indexOf(w.toLowerCase()) === -1){
       return w.charAt(0).toUpperCase() + w.slice(1);
     }
@@ -1143,13 +1151,24 @@ function startRealTimeInCall(contact, initialGoal){
   // Also check selected calling contacts or loaded contacts
   if(!contact.phone){
     var pool = (S.callCtx || []).concat(S.contacts || []);
+    var aliases = [contact.name.toLowerCase()];
+    if(/mummy|mom|mother|maa|mataji|ba|ammi/i.test(contact.name)){
+      aliases = ['mummy','mom','mother','maa','mataji','ba','ammi','mum','mammi','mami','મમ્મી','મમી','મા','બા','मम्मी','माँ','माताजी'];
+    } else if(/papa|dad|father|bapuji|pita|abbu|pappa/i.test(contact.name)){
+      aliases = ['papa','dad','father','bapuji','pita','abbu','pappa','પપ્પા','પિતા','બાપુજી','पापा','पिता'];
+    }
     for(var i=0; i<pool.length; i++){
-      if(pool[i].name.toLowerCase().indexOf(contact.name.toLowerCase()) !== -1 ||
-         contact.name.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
-        if(pool[i].phone && !isDemoNumber(pool[i].phone)){
-          contact.phone = pool[i].phone;
-          break;
+      var cName = (pool[i].name || '').toLowerCase();
+      var matched = false;
+      for(var a=0; a<aliases.length; a++){
+        var al = aliases[a];
+        if(cName === al || cName.indexOf(al) !== -1 || al.indexOf(cName) !== -1){
+          matched = true; break;
         }
+      }
+      if(matched && pool[i].phone && !isDemoNumber(pool[i].phone)){
+        contact.phone = pool[i].phone;
+        break;
       }
     }
   }
@@ -1159,7 +1178,7 @@ function startRealTimeInCall(contact, initialGoal){
   inCallSession.initialGoal = initialGoal || 'Talk on behalf of Akshar';
   inCallSession.seconds = 0;
   inCallSession.greeted = false;
-  inCallSession.countdownSeconds = 8;
+  inCallSession.countdownSeconds = 12;
   inCallSession.dialogueHistory = [];
   inCallSession.takeover = false;
 
@@ -1176,7 +1195,7 @@ function startRealTimeInCall(contact, initialGoal){
   var waitBanner = document.getElementById('inCallWaitBanner');
   var waitText = document.getElementById('inCallWaitText');
   if(waitBanner) waitBanner.style.display = 'flex';
-  if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + (contact.phone ? ' (' + contact.phone + ')' : '') + '... Waiting for answer (8s)';
+  if(waitText) waitText.textContent = '⏳ Calling ' + contact.name + (contact.phone ? ' (' + contact.phone + ')' : '') + '... Waiting for answer (12s)';
   setInCallStatus('Calling ' + contact.name + '... Waiting for answer', false);
 
   // Start call duration timer
@@ -1187,7 +1206,7 @@ function startRealTimeInCall(contact, initialGoal){
     document.getElementById('inCallTimer').textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
   }, 1000);
 
-  // Fallback countdown: auto-greet after 8.5 seconds if answer event hasn't arrived
+  // Fallback countdown: auto-greet after 12 seconds if answer event hasn't arrived
   if(inCallSession.countdownInterval) clearInterval(inCallSession.countdownInterval);
   inCallSession.countdownInterval = setInterval(function(){
     inCallSession.countdownSeconds--;
@@ -1569,8 +1588,9 @@ function processCmd(text, fromVoice){
   }
 
   // ─── 2. CALL & TALK ON ACTIVE PHONE CALL INTENT ───
-  var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/i.test(lower) && /\b(call|phone|ring|dial|lagav|lagao)\b/i.test(lower))
-                     || /\b(talk with|talk to|baat karo|vaat kar|vaat karo)\b/i.test(lower);
+  var isTalkBehalf = (/\b(talk|baat|vaat|behalf|bol|bolo|say|tell|speak)\b/i.test(lower) && /\b(call|phone|ring|dial|lagav|lagao|fone)\b/i.test(lower))
+                     || /\b(talk with|talk to|baat karo|vaat kar|vaat karo)\b/i.test(lower)
+                     || /\b(call and talk|call & talk|call her and talk|call mummy and talk|call mummy talk)\b/i.test(lower);
 
   if(isTalkBehalf){
     var target = extractCallTarget(text);
@@ -1585,15 +1605,25 @@ function processCmd(text, fromVoice){
     }
     if(!phone || isDemoNumber(phone)){
       var pool = (S.callCtx || []).concat(S.contacts || []);
+      var targetAliases = [target.toLowerCase()];
+      if(/mummy|mom|mother|maa|mataji|ba|ammi/i.test(target)){
+        targetAliases = ['mummy','mom','mother','maa','mataji','ba','ammi','mum','mammi','mami','મમ્મી','મમી','મા','બા','मम्मी','माँ','माताजी'];
+      } else if(/papa|dad|father|bapuji|pita|abbu|pappa/i.test(target)){
+        targetAliases = ['papa','dad','father','bapuji','pita','abbu','pappa','પપ્પા','પિતા','બાપુજી','पापा','पिता'];
+      }
       for(var i=0; i<pool.length; i++){
-        if(pool[i].name.toLowerCase() === target.toLowerCase() ||
-           pool[i].name.toLowerCase().indexOf(target.toLowerCase()) !== -1 ||
-           target.toLowerCase().indexOf(pool[i].name.toLowerCase()) !== -1){
-          if(pool[i].phone && !isDemoNumber(pool[i].phone)){
-            phone = pool[i].phone;
-            break;
+        var cName = (pool[i].name || '').toLowerCase();
+        for(var a=0; a<targetAliases.length; a++){
+          var alias = targetAliases[a];
+          if(cName === alias || cName.indexOf(alias) !== -1 || alias.indexOf(cName) !== -1){
+            if(pool[i].phone && !isDemoNumber(pool[i].phone)){
+              phone = pool[i].phone;
+              target = pool[i].name;
+              break;
+            }
           }
         }
+        if(phone) break;
       }
     }
     var ct = { name: target, phone: phone };

@@ -143,20 +143,42 @@ object ActionExecutor {
         }
     }
 
+    private fun isRelationMatch(contactName: String, term: String): Boolean {
+        val c = contactName.lowercase().trim()
+        val t = term.lowercase().trim()
+        if (c == t) return true
+        if (t.length <= 3 && t.all { it in 'a'..'z' }) {
+            val words = c.split("[\\s,._-]+".toRegex())
+            return words.contains(t)
+        }
+        return c.contains(t)
+    }
+
     /**
      * Dials phone number using Android native dialer (user taps Call to confirm).
-     * If phoneNumber is empty, opens blank dialpad.
+     * If phoneNumber is empty, opens blank dialpad safely without crashing.
      */
     fun dialPhone(context: Context, phoneNumber: String): Boolean {
         return try {
             val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
-            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
+            val dialIntent = if (cleanPhone.isNotEmpty()) {
+                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
+            } else {
+                Intent(Intent.ACTION_DIAL)
+            }
             dialIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(dialIntent)
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error dialing phone: ${e.message}")
-            false
+            try {
+                val fallbackIntent = Intent(Intent.ACTION_DIAL)
+                fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(fallbackIntent)
+                true
+            } catch (e2: Exception) {
+                false
+            }
         }
     }
 
@@ -244,18 +266,18 @@ object ActionExecutor {
 
             // 4. Contact not found, open dialpad as last resort
             Log.d(TAG, "Contact '$trimmed' not found in device contacts, opening dialpad")
-            dialPhone(context, "")
+            dialPhone(context, target)
             ""
         } catch (e: Exception) {
             Log.e(TAG, "Error in callOrDialContact: ${e.message}")
-            dialPhone(context, "")
+            dialPhone(context, target)
             ""
         }
     }
 
     /**
      * Looks up real phone number from Android ContactsContract.
-     * Handles relations aliases (Mummy/Mom/Maa, Papa/Dad), case-insensitivity, and fallback.
+     * Handles relations aliases (Mummy/Mom/Maa in EN/GU/HI, Papa/Dad), CONTENT_FILTER_URI, and fallback.
      */
     fun getPhoneNumber(context: Context, target: String): String {
         return try {
@@ -265,19 +287,49 @@ object ActionExecutor {
 
             val lower = trimmed.lowercase()
             val searchTerms = when {
-                lower in listOf("mummy", "mom", "mother", "maa", "mataji", "ba", "ammi") ->
-                    listOf("mummy", "mom", "mother", "maa", "mataji", "ba", "ammi")
-                lower in listOf("papa", "dad", "father", "bapuji", "pita", "abbu", "pappa") ->
-                    listOf("papa", "dad", "father", "bapuji", "pita", "abbu", "pappa")
-                lower in listOf("bhai", "brother", "bro") ->
-                    listOf("bhai", "brother", "bro")
-                lower in listOf("ben", "sister", "sis") ->
-                    listOf("ben", "sister", "sis")
+                lower in listOf("mummy", "mom", "mother", "maa", "mataji", "ba", "ammi", "mum", "mammi", "mami", "મમ્મી", "મમી", "મા", "બા", "માતાજી", "मम्मी", "माँ", "माताजी", "माता") ||
+                lower.contains("mummy") || lower.contains("mom") || lower.contains("mother") || lower.contains("maa") ->
+                    listOf("mummy", "mom", "mother", "maa", "mataji", "ba", "ammi", "mum", "mammi", "mami", "મમ્મી", "મમી", "મા", "બા", "માતાજી", "मम्मी", "माँ", "माताजी", "माता")
+                lower in listOf("papa", "dad", "father", "bapuji", "pita", "abbu", "pappa", "પપ્પા", "પિતા", "બાપુજી", "पापा", "पिता") ||
+                lower.contains("papa") || lower.contains("dad") || lower.contains("father") ->
+                    listOf("papa", "dad", "father", "bapuji", "pita", "abbu", "pappa", "પપ્પા", "પિતા", "બાપુજી", "पापा", "पिता")
+                lower in listOf("bhai", "brother", "bro", "ભાઈ", "भाई") || lower.contains("bhai") ->
+                    listOf("bhai", "brother", "bro", "ભાઈ", "भाई")
+                lower in listOf("ben", "sister", "sis", "બહેન", "બેન", "बहन") || lower.contains("ben") || lower.contains("sister") ->
+                    listOf("ben", "sister", "sis", "બહેન", "બેન", "बहन")
                 else -> listOf(lower)
             }
 
             var foundNumber: String? = null
 
+            // 0. Primary pass: Use Android's built-in intelligent Contact Filter API
+            try {
+                val filterUri = Uri.withAppendedPath(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
+                    Uri.encode(trimmed)
+                )
+                context.contentResolver.query(
+                    filterUri,
+                    arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                    null, null, null
+                )?.use { fc ->
+                    val nIdx = fc.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    while (fc.moveToNext()) {
+                        val num = fc.getString(nIdx) ?: ""
+                        val clean = num.filter { it.isDigit() }
+                        if (clean.length >= 7 && !clean.contains("987650000")) {
+                            foundNumber = num
+                            break
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "Content filter lookup skipped: ${e.message}")
+            }
+
+            if (foundNumber != null) return foundNumber!!
+
+            // 1. Comprehensive pass: Scan device contacts for aliases & substrings
             val cursor = context.contentResolver.query(
                 android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 arrayOf(
@@ -292,14 +344,14 @@ object ActionExecutor {
                 val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
                 val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
 
-                // 1. Pass: Match aliases or exact substring
+                // 1.1 Match aliases
                 while (c.moveToNext()) {
                     val name = c.getString(nameIdx)?.lowercase() ?: ""
                     val num = c.getString(numIdx) ?: ""
                     val clean = num.filter { it.isDigit() }
                     if (clean.length >= 7 && !clean.contains("987650000")) {
                         for (term in searchTerms) {
-                            if (name.contains(term)) {
+                            if (isRelationMatch(name, term)) {
                                 foundNumber = num
                                 break
                             }
@@ -308,7 +360,7 @@ object ActionExecutor {
                     if (foundNumber != null) break
                 }
 
-                // 2. Pass: Multi-word query (e.g. "call mummy and talk")
+                // 1.2 Multi-word query fallback
                 if (foundNumber == null && trimmed.contains(" ")) {
                     val words = trimmed.lowercase().split("\\s+".toRegex()).filter {
                         it.length >= 3 && it !in listOf("call", "dial", "talk", "with", "phone", "and", "the", "her", "him", "tell")
@@ -330,7 +382,7 @@ object ActionExecutor {
                     }
                 }
 
-                // 3. Pass: Generic fallback (e.g. user just said "call and talk")
+                // 1.3 Generic fallback (e.g. user said "call and talk")
                 if (foundNumber == null && (trimmed.isEmpty() || lower in listOf("call", "dial", "talk", "someone", "contact"))) {
                     c.moveToPosition(-1)
                     if (c.moveToFirst()) {

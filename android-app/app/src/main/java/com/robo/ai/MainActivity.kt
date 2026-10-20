@@ -439,10 +439,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         if (!matches.isNullOrEmpty()) {
                             val recognizedText = matches[0]
                             runOnUiThread {
-                                val escaped = recognizedText.replace("'", "\\'")
+                                val escaped = recognizedText.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
                                 webView.evaluateJavascript("if (window.onSpeechResult) window.onSpeechResult('$escaped');", null)
                             }
-                            this@MainActivity.speak("Understood: $recognizedText")
                         }
                     }
 
@@ -481,16 +480,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to ROBO (Gujarati, Hindi, English)")
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
             }
+            if (speechRecognizer != null) {
+                try {
+                    speechRecognizer?.startListening(intent)
+                    return@runOnUiThread
+                } catch (e: Exception) {
+                    Log.e("ROBO_VOICE", "speechRecognizer.startListening failed: ${e.message}, falling back to activity")
+                }
+            }
             try {
                 startActivityForResult(intent, REQUEST_CODE_SPEECH)
             } catch (e: Exception) {
-                Log.e("ROBO_VOICE", "Speech activity failed, trying speechRecognizer: ${e.message}")
-                if (speechRecognizer != null) {
-                    speechRecognizer?.startListening(intent)
-                } else {
-                    Toast.makeText(this, "Voice recognition not available. Please install Google Speech.", Toast.LENGTH_SHORT).show()
-                    webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('ready');", null)
-                }
+                Log.e("ROBO_VOICE", "Speech activity failed: ${e.message}")
+                Toast.makeText(this, "Voice recognition not available. Please install Google Speech.", Toast.LENGTH_SHORT).show()
+                webView.evaluateJavascript("if (window.onSpeechState) window.onSpeechState('ready');", null)
             }
         }
     }
@@ -551,6 +554,22 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 100)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Auto-reload real device contacts as soon as permissions are granted
+        scope.launch(Dispatchers.IO) {
+            val json = loadDeviceContacts()
+            withContext(Dispatchers.Main) {
+                val escaped = json.replace("\\", "\\\\").replace("'", "\\'")
+                webView.evaluateJavascript("if (window.onContactsLoaded) window.onContactsLoaded('$escaped');", null)
+            }
         }
     }
 
