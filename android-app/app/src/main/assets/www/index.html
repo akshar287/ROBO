@@ -93,6 +93,157 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
 .cb-user{background:linear-gradient(135deg,#2563EB,#06B6D4);border-radius:16px 16px 4px 16px;padding:11px 13px;max-width:80%;font-size:13px;line-height:1.55;color:#fff;}
 .cb-bot{background:#10192E;border:1px solid #1D2B4A;border-radius:16px 16px 16px 4px;padding:11px 13px;max-width:82%;font-size:13px;line-height:1.55;color:#CBD5E1;}
 .cb-caller{background:#172554;border:1px solid #1E40AF;border-radius:16px 16px 4px 16px;padding:11px 13px;max-width:82%;font-size:13px;line-height:1.55;color:#93C5FD;}
+
+/* ═══════════ LIGHT THEME RULES ═══════════ */
+body.light-theme,
+body.light-theme html,
+body.light-theme #app,
+body.light-theme .screen {
+  background: #F8FAFC !important;
+  color: #0F172A !important;
+}
+
+body.light-theme .card {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+body.light-theme .inp {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+body.light-theme .inp::placeholder {
+  color: #94A3B8 !important;
+}
+
+body.light-theme #bottom-nav {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1px solid #E2E8F0 !important;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+}
+body.light-theme .bnav-btn {
+  color: #64748B !important;
+}
+body.light-theme .bnav-btn.active {
+  color: #0284C7 !important;
+}
+
+body.light-theme .qa {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #1E293B !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+body.light-theme .qa:active {
+  background: #F1F5F9 !important;
+}
+
+body.light-theme .cb-bot {
+  background: #F1F5F9 !important;
+  border-color: #E2E8F0 !important;
+  color: #1E293B !important;
+}
+
+body.light-theme .cb-caller {
+  background: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: #1E40AF !important;
+}
+
+body.light-theme .modal {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+body.light-theme .modal-box {
+  background: #FFFFFF !important;
+  border-top-color: #E2E8F0 !important;
+  color: #0F172A !important;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+body.light-theme .mhandle {
+  background: #CBD5E1 !important;
+}
+
+body.light-theme .ci:active {
+  background: #F1F5F9 !important;
+}
+
+body.light-theme .app-ic {
+  border-color: #E2E8F0 !important;
+  background: #F8FAFC !important;
+}
+body.light-theme .app-lbl {
+  color: #475569 !important;
+}
+
+body.light-theme .hi {
+  border-bottom-color: #E2E8F0 !important;
+}
+
+/* Light theme overrides for hardcoded inline dark styles */
+body.light-theme [style*="background:#060A14"],
+body.light-theme [style*="background:#070D1B"],
+body.light-theme [style*="background:#0B1327"],
+body.light-theme [style*="background:#060a14"] {
+  background: #F8FAFC !important;
+}
+
+body.light-theme [style*="background:rgba(6,10,20,.98)"] {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: #E2E8F0 !important;
+}
+
+body.light-theme [style*="background:#10192E"] {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+body.light-theme [style*="background:linear-gradient(160deg,#10192E,#0B1327)"] {
+  background: linear-gradient(160deg, #FFFFFF, #F1F5F9) !important;
+  border-color: #E2E8F0 !important;
+}
+
+body.light-theme [style*="color:#F1F5F9"],
+body.light-theme [style*="color:#fff"] {
+  color: #0F172A !important;
+}
+
+body.light-theme [style*="color:#CBD5E1"] {
+  color: #334155 !important;
+}
+
+body.light-theme [style*="color:#94A3B8"] {
+  color: #475569 !important;
+}
+
+body.light-theme [style*="color:#64748B"],
+body.light-theme [style*="color:#475569"],
+body.light-theme [style*="color:#334155"] {
+  color: #64748B !important;
+}
+
+body.light-theme [style*="border:1px solid #1D2B4A"],
+body.light-theme [style*="border-bottom:1px solid #0D1B3A"],
+body.light-theme [style*="border-top:1px solid #1D2B4A"] {
+  border-color: #E2E8F0 !important;
+}
+
+body.light-theme .btn-p {
+  color: #FFFFFF !important;
+}
+body.light-theme .cb-user {
+  color: #FFFFFF !important;
+}
+body.light-theme .bnav-mic {
+  color: #FFFFFF !important;
+}
+body.light-theme .grad-text {
+  background: linear-gradient(135deg, #0284C7, #0EA5E9, #2563EB) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
 </style>
 </head>
 <body>
@@ -105,18 +256,7 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
     <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(34,211,238,.08);color:#22D3EE;border:1px solid rgba(34,211,238,.18);">v2.3 Conversational AI</span>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
-      <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E2F1FF"/><stop offset="100%" stop-color="#5D92D6"/></linearGradient><linearGradient id="sc" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0B1528"/><stop offset="100%" stop-color="#050B17"/></linearGradient><linearGradient id="ey" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#67E8F9"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs>
-      <rect x="14" y="50" width="10" height="24" rx="5" fill="#0284C7"/><rect x="96" y="50" width="10" height="24" rx="5" fill="#0284C7"/>
-      <rect x="22" y="24" width="76" height="68" rx="28" fill="url(#bg)" stroke="#A5C9EB" stroke-width="1.5"/>
-      <rect x="28" y="32" width="64" height="46" rx="18" fill="url(#sc)" stroke="#1E3A5F" stroke-width="1.5"/>
-      <ellipse cx="44" cy="52" rx="9" ry="12" fill="url(#ey)"/><ellipse cx="76" cy="52" rx="9" ry="12" fill="url(#ey)"/>
-      <circle cx="47" cy="48" r="3.5" fill="#fff"/><circle cx="79" cy="48" r="3.5" fill="#fff"/>
-      <path d="M53 66 Q60 70 67 66" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M60 24 V12" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="60" cy="10" r="5" fill="#00D2FF"/><circle cx="60" cy="10" r="2" fill="#fff"/>
-      <rect x="42" y="93" width="36" height="8" rx="4" fill="#0284C7"/><circle cx="60" cy="97" r="2" fill="#38BDF8"/>
-    </svg>
+    <img src="robo_icon.png" width="108" height="108" style="border-radius:26px;box-shadow:0 0 35px rgba(34,211,238,.45);margin-bottom:8px;" alt="ROBO"/>
     <h1 style="font-size:44px;font-weight:900;letter-spacing:4px;" class="grad-text">ROBO</h1>
     <p style="color:rgba(103,232,249,.75);font-size:13px;letter-spacing:.8px;">Real-Time Conversational AI Agent</p>
     <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
@@ -241,14 +381,15 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
   <div style="padding:12px 16px 8px;flex-shrink:0;background:rgba(6,10,20,.98);border-bottom:1px solid #0D1B3A;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:8px;">
-        <svg viewBox="0 0 50 50" width="26" height="26" fill="none"><rect x="5" y="20" width="5" height="12" rx="2.5" fill="#0284C7"/><rect x="40" y="20" width="5" height="12" rx="2.5" fill="#0284C7"/><rect x="8" y="8" width="34" height="32" rx="13" fill="#B8D4F0"/><rect x="11" y="13" width="28" height="22" rx="9" fill="#0B1528"/><ellipse cx="19" cy="23" rx="5" ry="6" fill="#22D3EE"/><ellipse cx="31" cy="23" rx="5" ry="6" fill="#22D3EE"/><circle cx="20.5" cy="21" r="2" fill="#fff"/><circle cx="32.5" cy="21" r="2" fill="#fff"/><path d="M22 29 Q25 31 28 29" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round"/><circle cx="25" cy="5" r="2.5" fill="#00D2FF"/></svg>
+        <img src="robo_icon.png" width="28" height="28" style="border-radius:8px;vertical-align:middle;box-shadow:0 0 10px rgba(34,211,238,.4);" alt="ROBO"/>
         <span style="font-size:18px;font-weight:900;letter-spacing:2px;" class="grad-text">ROBO</span>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="atoggle" onclick="toggleAgent()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="atoggle" onclick="toggleAgent()" style="display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;">
           <span id="adot" class="dot dot-g"></span><span id="albl">Agent ON</span>
         </button>
-        <button onclick="G(16)" style="width:32px;height:32px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;font-size:15px;display:flex;align-items:center;justify-content:center;">⚙️</button>
+        <button id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Theme" style="width:32px;height:32px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;">☀️</button>
+        <button onclick="G(16)" style="width:32px;height:32px;border-radius:10px;background:#10192E;border:1px solid #1D2B4A;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;">⚙️</button>
       </div>
     </div>
     <h2 id="greet" style="font-size:19px;font-weight:800;color:#F1F5F9;">Good Morning, Akshar 👋</h2>
@@ -456,6 +597,17 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
       </div>
       <button id="s-atoggle" onclick="toggleAgent(event)" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;">
         <span id="s-adot" class="dot dot-g"></span><span id="s-albl">Agent ON</span>
+      </button>
+    </div>
+
+    <p style="font-size:10px;font-weight:700;color:#22D3EE;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">🎨 Appearance &amp; Theme</p>
+    <div class="card" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;">
+      <div>
+        <p style="font-size:13px;font-weight:700;color:#CBD5E1;">Theme Mode</p>
+        <p id="themeDesc" style="font-size:11px;color:#64748B;">Dark Mode active (Tap to switch to Light Theme)</p>
+      </div>
+      <button id="s-themetoggle" onclick="toggleTheme()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);color:#22D3EE;font-size:11px;font-weight:700;">
+        <span id="themeBtnIcon">☀️</span> <span id="themeBtnText">Light Mode</span>
       </button>
     </div>
 
@@ -684,10 +836,56 @@ var S = {
   lang: 'gu',
   ollamaUrl: 'http://10.0.2.2:11434',
   ollamaModel: 'llama3',
+  theme: 'dark',
   taskHistory: []  // [{icon,text,time,status}]
 };
 try { var sv = localStorage.getItem('robo_v2'); if(sv){var p=JSON.parse(sv);Object.assign(S,p);} } catch(e){}
 function save(){ try{ localStorage.setItem('robo_v2', JSON.stringify(S)); }catch(e){} }
+
+// ═══════════ THEME MANAGEMENT ═══════════
+function applyTheme(theme){
+  S.theme = theme || 'dark';
+  var isLight = S.theme === 'light';
+  var metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(isLight){
+    document.body.classList.add('light-theme');
+    if(metaTheme) metaTheme.setAttribute('content', '#F8FAFC');
+  } else {
+    document.body.classList.remove('light-theme');
+    if(metaTheme) metaTheme.setAttribute('content', '#060A14');
+  }
+
+  // Dashboard Header Toggle Button
+  var dashBtn = document.getElementById('themeToggleBtn');
+  if(dashBtn){
+    dashBtn.innerHTML = isLight ? '🌙' : '☀️';
+    dashBtn.setAttribute('title', isLight ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+    dashBtn.style.background = isLight ? '#FFFFFF' : '#10192E';
+    dashBtn.style.borderColor = isLight ? '#CBD5E1' : '#1D2B4A';
+    dashBtn.style.color = isLight ? '#0F172A' : '#CBD5E1';
+  }
+
+  // Settings Screen Elements
+  var sIcon = document.getElementById('themeBtnIcon');
+  var sText = document.getElementById('themeBtnText');
+  var sDesc = document.getElementById('themeDesc');
+  var sToggle = document.getElementById('s-themetoggle');
+  if(sIcon) sIcon.textContent = isLight ? '🌙' : '☀️';
+  if(sText) sText.textContent = isLight ? 'Dark Mode' : 'Light Mode';
+  if(sDesc) sDesc.textContent = isLight ? 'Light Mode active (Tap to switch to Dark Mode)' : 'Dark Mode active (Tap to switch to Light Mode)';
+  if(sToggle){
+    sToggle.style.background = isLight ? 'rgba(2,132,199,.12)' : 'rgba(34,211,238,.1)';
+    sToggle.style.borderColor = isLight ? 'rgba(2,132,199,.35)' : 'rgba(34,211,238,.35)';
+    sToggle.style.color = isLight ? '#0284C7' : '#22D3EE';
+  }
+}
+
+function toggleTheme(){
+  var newTheme = (S.theme === 'light') ? 'dark' : 'light';
+  applyTheme(newTheme);
+  save();
+  showT(newTheme === 'light' ? '☀️ Switched to Light Theme' : '🌙 Switched to Dark Theme');
+}
 
 // ═══════════ NAVIGATION ═══════════
 function G(n){
@@ -1668,6 +1866,31 @@ function processCmd(text, fromVoice){
   var vt = document.getElementById('vTrans');
   var va = document.getElementById('vAction');
   if(vt) vt.textContent = '"'+text+'"';
+  // ─── 0.1 THEME VOICE COMMANDS ───
+  var isLightCmd = /\b(light\s+theme|light\s+mode|white\s+theme|white\s+mode|day\s+mode|light\s+karo)\b/i.test(lower);
+  var isDarkCmd = /\b(dark\s+theme|dark\s+mode|black\s+theme|black\s+mode|night\s+mode|dark\s+karo)\b/i.test(lower);
+  if(isLightCmd){
+    applyTheme('light');
+    save();
+    var msg = '☀️ Switched to Light Theme!';
+    if(vt) vt.textContent = msg;
+    if(va){va.textContent=msg;va.style.display='block';}
+    setDashReply(msg);
+    showT(msg);
+    if(window.AndroidBridge) AndroidBridge.speak('Switched to Light Theme');
+    return;
+  }
+  if(isDarkCmd){
+    applyTheme('dark');
+    save();
+    var msg = '🌙 Switched to Dark Theme!';
+    if(vt) vt.textContent = msg;
+    if(va){va.textContent=msg;va.style.display='block';}
+    setDashReply(msg);
+    showT(msg);
+    if(window.AndroidBridge) AndroidBridge.speak('Switched to Dark Theme');
+    return;
+  }
 
   // ─── 0. VOICE AGENT ON / OFF COMMANDS ───
   var isTurnOn = /\b(turn\s+on\s+agent|agent\s+on|activate\s+agent|start\s+agent|chalu\s+karo|resume\s+agent)\b/i.test(lower);
@@ -2062,6 +2285,9 @@ function showT(msg){
 
 // ─── SPLASH ───
 window.addEventListener('DOMContentLoaded',function(){
+  // Apply saved theme preference
+  applyTheme(S.theme || 'dark');
+
   // Never restore in-call screen 24 on launch
   if(S.cur === 24) S.cur = 7;
 
