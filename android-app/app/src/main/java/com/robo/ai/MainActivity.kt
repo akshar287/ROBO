@@ -114,12 +114,18 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         inCallSpeechJob?.cancel()
         enableSpeakerphone(true)
 
-        val cName = if (activeCallTarget.isBlank()) "Mummy" else activeCallTarget
-        val note = if (activeCallGoal.isNotBlank()) activeCallGoal else "Akshar asked me to talk with you"
+        val cName = when {
+            activeCallTarget.isBlank() || activeCallTarget.filter { it.isDigit() }.length >= 5 -> "Mummy"
+            else -> activeCallTarget
+        }
+        val note = when {
+            activeCallGoal.isBlank() || activeCallGoal.contains("Talk on behalf", ignoreCase = true) || activeCallGoal.contains("behalf of Akshar", ignoreCase = true) -> ""
+            else -> activeCallGoal.trim().removeSuffix(".") + ". "
+        }
         val greeting = if (customGreeting.isNotBlank()) {
             customGreeting
         } else {
-            "Jay Swaminarayan $cName! I am ROBO. I am talking to you on behalf of Akshar. $note. Kem cho, how are you doing today?"
+            "Jay Swaminarayan $cName! I am ROBO. I am talking to you on behalf of Akshar. ${note}Kem cho, how are you doing today?"
         }
 
         showInCallNotification("🗣️ ROBO Speaking on Call", "Talking with $cName on behalf of Akshar", false)
@@ -719,6 +725,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        // Re-register call listener once READ_PHONE_STATE is granted
+        setupCallStateListener()
         // Auto-reload real device contacts as soon as permissions are granted
         scope.launch(Dispatchers.IO) {
             val json = loadDeviceContacts()

@@ -291,6 +291,16 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
         <button onclick="quickWA()" class="qa"><span style="font-size:20px;color:#25D366;">💬</span><div><p style="font-size:12px;font-weight:700;">WhatsApp</p><p id="qwName" style="font-size:10px;color:#475569;">Select contact</p></div></button>
         <button onclick="G(21)" class="qa"><span style="font-size:20px;">🚀</span><div><p style="font-size:12px;font-weight:700;">Launch App</p><p style="font-size:10px;color:#475569;">Any installed app</p></div></button>
       </div>
+      <!-- Mummy Quick Number Badge -->
+      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;background:#0B132B;border:1px solid #1E293B;border-radius:12px;padding:8px 12px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:13px;">👵</span>
+          <span style="font-size:11px;font-weight:700;color:#94A3B8;">Mummy's Number:</span>
+        </div>
+        <button onclick="openSetNumberModal('Mummy')" id="dashMummyNumBtn" style="font-size:11px;font-weight:800;color:#22D3EE;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.3);padding:4px 10px;border-radius:8px;cursor:pointer;">
+          + Tap to Set
+        </button>
+      </div>
     </div>
 
     <!-- App quick-launch -->
@@ -623,6 +633,32 @@ input,textarea{font-family:inherit;color:#fff;background:transparent;outline:non
   </div>
 </div>
 
+<!-- SET CONTACT NUMBER MODAL -->
+<div id="setNumModal" class="modal">
+  <div class="modal-box" style="max-height:85vh;">
+    <div class="mhandle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <p id="setNumTitle" style="font-size:15px;font-weight:700;color:#F1F5F9;">📞 Set Mummy's Phone Number</p>
+      <button onclick="closeSetNumberModal()" style="font-size:22px;color:#475569;line-height:1;background:none;border:none;cursor:pointer;">✕</button>
+    </div>
+    <p style="font-size:12px;color:#94A3B8;margin-bottom:14px;line-height:1.4;">
+      Enter the real phone number to dial Mummy directly from your dialpad and talk on your behalf:
+    </p>
+    <input id="setNumInput" type="tel" class="inp" placeholder="e.g. 9825012345" style="width:100%;margin-bottom:12px;font-size:16px;font-family:monospace;letter-spacing:1px;font-weight:700;text-align:center;padding:12px;" onkeydown="if(event.key==='Enter')confirmSetNumber()" />
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="confirmSetNumber()" class="btn-p" style="padding:12px;font-weight:800;background:linear-gradient(135deg,#10B981,#059669);box-shadow:0 4px 12px rgba(16,185,129,.3);">
+        📞 Save &amp; Call Now
+      </button>
+      <button onclick="pickContactForSetNum()" style="padding:10px;border-radius:12px;background:#1E293B;border:1px solid #38BDF8;color:#38BDF8;font-size:12px;font-weight:700;cursor:pointer;">
+        📖 Pick from Device Contacts
+      </button>
+      <button onclick="openDialpadDirectly()" style="padding:8px;background:none;border:none;color:#64748B;font-size:12px;cursor:pointer;">
+        Open Empty Phone Dialpad
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ████ BOTTOM NAV ████ -->
 <nav id="bottom-nav">
   <div class="bnav">
@@ -814,6 +850,63 @@ function renderChips(id,contacts){
 }
 function closePicker(){ document.getElementById('pickerModal').classList.remove('show'); document.getElementById('pickerSearch').value=''; }
 
+// ═══════════ SET CONTACT NUMBER MODAL LOGIC ═══════════
+var pendingSetNumTarget = 'Mummy';
+function openSetNumberModal(targetName){
+  pendingSetNumTarget = targetName || 'Mummy';
+  var title = document.getElementById('setNumTitle');
+  if(title) title.textContent = '📞 Set ' + pendingSetNumTarget + '\'s Phone Number';
+  var inp = document.getElementById('setNumInput');
+  if(inp){
+    var m = (S.callCtx||[]).concat(S.contacts||[]).find(function(c){
+      return c.name && c.name.toLowerCase() === pendingSetNumTarget.toLowerCase() && c.phone && !isDemoNumber(c.phone);
+    });
+    inp.value = m ? m.phone : '';
+  }
+  var modal = document.getElementById('setNumModal');
+  if(modal) modal.classList.add('show');
+}
+function closeSetNumberModal(){
+  var modal = document.getElementById('setNumModal');
+  if(modal) modal.classList.remove('show');
+}
+function confirmSetNumber(){
+  var inp = document.getElementById('setNumInput');
+  var num = inp ? inp.value.trim() : '';
+  var clean = num.replace(/[^0-9+]/g, '');
+  if(clean.length < 7){
+    showT('Please enter a valid phone number (at least 7 digits).');
+    return;
+  }
+  var cName = pendingSetNumTarget || 'Mummy';
+  var ct = { name: cName, phone: clean, ini: cName.slice(0,2).toUpperCase(), color: '#22D3EE' };
+  var found = false;
+  for(var i=0; i<S.contacts.length; i++){
+    if(S.contacts[i].name && S.contacts[i].name.toLowerCase() === cName.toLowerCase()){
+      S.contacts[i].phone = clean;
+      found = true;
+      break;
+    }
+  }
+  if(!found) S.contacts.unshift(ct);
+  S.callCtx = [ct];
+  save();
+  refreshDash();
+  closeSetNumberModal();
+  showT('Saved ' + cName + ' (' + clean + ')! Dialing call now...');
+  startRealTimeInCall(ct, 'Talk on behalf of Akshar');
+}
+function pickContactForSetNum(){
+  closeSetNumberModal();
+  openPicker('call');
+}
+function openDialpadDirectly(){
+  closeSetNumberModal();
+  if(window.AndroidBridge){
+    AndroidBridge.dialPhone('');
+  }
+}
+
 function saveSetup(){
   S.phone=document.getElementById('phIn').value.trim();
   var em=document.getElementById('emIn').value.trim(); if(em)S.email=em;
@@ -842,6 +935,25 @@ function refreshDash(){
   renderChips('callChips',S.callCtx); renderChips('waChips',S.waCtx);
   if(S.callCtx.length){var b=document.getElementById('callBadge');if(b){b.textContent=S.callCtx.length+' selected';b.className='badge b-green';}}
   if(S.waCtx.length){var b=document.getElementById('waBadge');if(b){b.textContent=S.waCtx.length+' selected';b.className='badge b-green';}}
+
+  // Update Mummy Number Badge
+  var mNumBtn = document.getElementById('dashMummyNumBtn');
+  if(mNumBtn){
+    var m = (S.callCtx||[]).concat(S.contacts||[]).find(function(c){
+      return /mummy|mom|maa|mother|mataji|ba|ammi|મમ્મી|મમી|મા|બા|मम्मी|माँ/i.test(c.name) && c.phone && !isDemoNumber(c.phone);
+    });
+    if(m && m.phone){
+      mNumBtn.textContent = m.phone;
+      mNumBtn.style.color = '#34D399';
+    } else if(S.callCtx && S.callCtx.length && S.callCtx[0].phone && !isDemoNumber(S.callCtx[0].phone)){
+      mNumBtn.textContent = S.callCtx[0].phone;
+      mNumBtn.style.color = '#34D399';
+    } else {
+      mNumBtn.textContent = '+ Tap to Set';
+      mNumBtn.style.color = '#22D3EE';
+    }
+  }
+
   renderHistPreview();
   updateAgentUI();
 }
@@ -1080,9 +1192,42 @@ function extractCallTarget(text){
 }
 
 function dialCall(target, speechScript){
+  var cleanDigits = (target || '').replace(/[^0-9+]/g, '');
+  var dialTarget = target;
+  if(cleanDigits.length < 7){
+    if(window.AndroidBridge && typeof AndroidBridge.getPhoneNumber === 'function'){
+      try {
+        var bridgeNum = AndroidBridge.getPhoneNumber(target);
+        if(bridgeNum && !isDemoNumber(bridgeNum)) dialTarget = bridgeNum;
+      } catch(e){}
+    }
+    if(dialTarget === target){
+      var pool = (S.callCtx || []).concat(S.contacts || []);
+      var targetLower = (target || '').toLowerCase();
+      for(var i=0; i<pool.length; i++){
+        var cName = (pool[i].name || '').toLowerCase();
+        if(cName === targetLower || cName.indexOf(targetLower) !== -1 || targetLower.indexOf(cName) !== -1){
+          if(pool[i].phone && !isDemoNumber(pool[i].phone)){
+            dialTarget = pool[i].phone;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  var digits = dialTarget.replace(/[^0-9+]/g, '');
+  if(digits.length < 7 && /mummy|mom|maa|mother|mataji|papa|dad|father/i.test(target)){
+    openSetNumberModal(target);
+    if(window.AndroidBridge){
+      AndroidBridge.dialPhone('');
+    }
+    return;
+  }
+
   if(window.AndroidBridge){
     if(typeof AndroidBridge.callOrDial === 'function'){
-      AndroidBridge.callOrDial(target, speechScript || '');
+      AndroidBridge.callOrDial(dialTarget, speechScript || '');
     } else {
       // Direct backwards-compatible fallback for older APKs
       var found = null;
@@ -1174,6 +1319,15 @@ function startRealTimeInCall(contact, initialGoal){
     }
   }
 
+  // 3. If STILL no phone number found, prompt Akshar to enter it or pick contact!
+  if(!contact.phone){
+    openSetNumberModal(contact.name);
+    if(window.AndroidBridge){
+      AndroidBridge.dialPhone('');
+    }
+    return;
+  }
+
   inCallSession.active = true;
   inCallSession.contact = contact;
   inCallSession.initialGoal = initialGoal || 'Talk on behalf of Akshar';
@@ -1195,10 +1349,10 @@ function startRealTimeInCall(contact, initialGoal){
   var waitBanner = document.getElementById('inCallWaitBanner');
   var waitText = document.getElementById('inCallWaitText');
   if(waitBanner) waitBanner.style.display = 'flex';
-  if(waitText) waitText.textContent = '⏳ Dialing ' + contact.name + ' on cellular network... Waiting for answer';
+  if(waitText) waitText.textContent = '⏳ Dialing ' + contact.name + ' (' + contact.phone + ')... Waiting for answer';
   setInCallStatus('Dialing ' + contact.name + ' on phone dialpad...', false);
 
-  showT('📞 Dialing ' + contact.name + ' on phone dialer... ROBO will speak when answered!');
+  showT('📞 Opening dialpad & calling ' + contact.name + ' (' + contact.phone + ')...');
 
   // Start call duration timer
   if(inCallSession.timerInterval) clearInterval(inCallSession.timerInterval);
@@ -1208,13 +1362,14 @@ function startRealTimeInCall(contact, initialGoal){
     if(inTimer) inTimer.textContent = (m<10?'0':'')+m + ':' + (s<10?'0':'')+s;
   }, 1000);
 
-  // Enable speakerphone and trigger ACTUAL cellular phone call in Android
+  // Trigger ACTUAL cellular phone call in Android, PASSING THE REAL PHONE NUMBER!
+  var dialTarget = (contact.phone && !isDemoNumber(contact.phone)) ? contact.phone : contact.name;
   if(window.AndroidBridge){
     AndroidBridge.enableSpeakerphone(true);
-    AndroidBridge.callOrDial(contact.name, inCallSession.initialGoal);
+    AndroidBridge.callOrDial(dialTarget, inCallSession.initialGoal);
   }
 
-  addHist('🗣️', 'In-Call 2-Way AI Call: ' + contact.name, 'Call Active');
+  addHist('🗣️', 'In-Call 2-Way AI Call: ' + contact.name + ' (' + contact.phone + ')', 'Call Active');
 }
 
 function speakInCallGreeting(){

@@ -161,27 +161,62 @@ object ActionExecutor {
      * Uses Uri.fromParts to prevent URI corruption and tries multiple dialer intents.
      */
     fun dialPhone(context: Context, phoneNumber: String): Boolean {
-        return try {
-            val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
-            val dialUri = if (cleanPhone.isNotEmpty()) Uri.parse("tel:$cleanPhone") else Uri.parse("tel:")
-            val dialIntent = Intent(Intent.ACTION_DIAL, dialUri).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val cleanPhone = phoneNumber.filter { it.isDigit() || it == '+' }
+        Log.d(TAG, "dialPhone: opening dialpad for '$cleanPhone'")
+
+        // 1. If phone number has digits, open dialer pre-filled with the number
+        if (cleanPhone.isNotEmpty()) {
+            val formatted = when {
+                cleanPhone.length == 10 -> "+91$cleanPhone"
+                cleanPhone.startsWith("0") -> "+91" + cleanPhone.substring(1)
+                else -> cleanPhone
             }
-            context.startActivity(dialIntent)
-            Log.d(TAG, "Successfully started dialer with: $cleanPhone")
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting dialer: ${e.message}")
             try {
-                val genericIntent = Intent(Intent.ACTION_DIAL).apply {
+                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$formatted")).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                context.startActivity(genericIntent)
-                true
-            } catch (ex: Exception) {
-                false
+                context.startActivity(intent)
+                Log.d(TAG, "Successfully started ACTION_DIAL with tel:$formatted")
+                return true
+            } catch (e: Exception) {
+                Log.w(TAG, "ACTION_DIAL with tel:$formatted failed: ${e.message}")
             }
         }
+
+        // 2. If no phone number (empty), open the dialpad directly without data URI
+        // NOTE: Never use Uri.parse("tel:") with ACTION_DIAL when empty — Samsung One UI drops it!
+        try {
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            Log.d(TAG, "Successfully started empty Intent(Intent.ACTION_DIAL)")
+            return true
+        } catch (e: Exception) {
+            Log.w(TAG, "Empty ACTION_DIAL failed: ${e.message}")
+        }
+
+        // 3. Fallback: Direct launcher for Samsung Phone or Google Phone
+        val knownDialers = listOf(
+            "com.samsung.android.dialer",
+            "com.google.android.dialer",
+            "com.android.phone",
+            "com.android.dialer"
+        )
+        for (pkg in knownDialers) {
+            try {
+                val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)
+                if (launchIntent != null) {
+                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(launchIntent)
+                    Log.d(TAG, "Successfully started dialer package: $pkg")
+                    return true
+                }
+            } catch (e: Exception) {
+                // Continue
+            }
+        }
+        return false
     }
 
     /**
