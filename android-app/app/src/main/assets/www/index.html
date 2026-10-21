@@ -407,7 +407,35 @@ body.light-theme .grad-text {
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">📱</span><div><p style="font-size:10px;color:#334155;">Phone</p><p style="font-size:12px;font-weight:700;color:#22C55E;">Connected</p></div></div>
       <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">⚡</span><div><p style="font-size:10px;color:#334155;">AI Engine</p><p id="ollamaStat" style="font-size:12px;font-weight:700;color:#22D3EE;">Groq Cloud</p></div></div>
-      <div class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;"><span style="font-size:17px;">💬</span><div><p style="font-size:10px;color:#334155;">WhatsApp</p><p style="font-size:12px;font-weight:700;color:#25D366;">Ready</p></div></div>
+      <div id="dashWaStatCard" onclick="G(23)" class="card" style="flex:1;padding:9px 10px;display:flex;align-items:center;gap:7px;cursor:pointer;"><span style="font-size:17px;">💬</span><div><p style="font-size:10px;color:#334155;">WhatsApp</p><p id="dashWaStatText" style="font-size:12px;font-weight:700;color:#25D366;">Ready</p></div></div>
+    </div>
+
+    <!-- Notification Access Warning Banner (if access missing) -->
+    <div id="dashNotifWarningBanner" style="display:none;margin-bottom:14px;background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.35);border-radius:14px;padding:10px 14px;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">🔔</span>
+        <p style="font-size:11px;color:#FCA5A5;line-height:1.4;">Notification Access needed to auto-reply on WhatsApp</p>
+      </div>
+      <button onclick="grantNotifAccessAndStart()" style="padding:6px 12px;border-radius:8px;background:#EF4444;color:#fff;font-size:11px;font-weight:700;border:none;cursor:pointer;flex-shrink:0;">
+        Enable →
+      </button>
+    </div>
+
+    <!-- Live Active WhatsApp Background Agent Banner -->
+    <div id="dashWaAgentBanner" style="display:none;margin-bottom:14px;background:rgba(34,197,94,.08);border:1.5px solid rgba(34,197,94,.4);border-radius:14px;padding:12px 14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:20px;">💬</span>
+          <div>
+            <p style="font-size:13px;font-weight:700;color:#F1F5F9;">Chatting on WhatsApp on your behalf</p>
+            <p id="dashWaAgentTarget" style="font-size:11px;color:#22C55E;">● Active auto-reply</p>
+          </div>
+        </div>
+        <span class="badge b-green">Active</span>
+      </div>
+      <button onclick="stopWhatsAppAgent()" style="width:100%;padding:9px;border-radius:10px;background:#EF4444;color:#fff;font-size:12px;font-weight:800;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span>⏹️</span> Stop WhatsApp Task
+      </button>
     </div>
 
     <!-- Mic + text input -->
@@ -831,6 +859,31 @@ body.light-theme .grad-text {
       </button>
       <button onclick="openDialpadDirectly()" style="padding:8px;background:none;border:none;color:#64748B;font-size:12px;cursor:pointer;">
         Open Empty Phone Dialpad
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION ACCESS REQUIRED MODAL -->
+<div id="notifModal" class="modal">
+  <div class="modal-box" style="max-height:85vh;text-align:center;">
+    <div class="mhandle"></div>
+    <div style="font-size:38px;margin-bottom:8px;">🔔</div>
+    <p style="font-size:16px;font-weight:800;color:#F1F5F9;margin-bottom:6px;">Notification Access Required</p>
+    <p style="font-size:12px;color:#94A3B8;line-height:1.5;margin-bottom:14px;">
+      To auto-reply to WhatsApp on your behalf, Android requires <b style="color:#22D3EE;">Notification Access</b> for ROBO.
+    </p>
+    <div style="background:#070D1B;border:1px solid #1D2B4A;border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;font-size:12px;color:#CBD5E1;line-height:1.6;">
+      <p style="font-weight:700;color:#22D3EE;margin-bottom:4px;">Easy 2-Step Activation:</p>
+      1️⃣ Tap <b>"Open Android Settings"</b> below<br>
+      2️⃣ In the list, find <b>ROBO</b> and toggle it <b>ON (Allow)</b>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="grantNotifAccessAndStart()" class="btn-p" style="padding:13px;font-weight:800;background:linear-gradient(135deg,#0EA5E9,#06B6D4);box-shadow:0 4px 15px rgba(6,182,212,.4);">
+        ⚙️ Open Android Settings Now →
+      </button>
+      <button onclick="closeNotifModal()" style="padding:9px;background:none;border:none;color:#64748B;font-size:12px;cursor:pointer;">
+        Cancel
       </button>
     </div>
   </div>
@@ -1308,6 +1361,8 @@ function refreshDash(){
 
   renderHistPreview();
   updateAgentUI();
+  updateWaAgentUI();
+  updateNotificationPermissionStatus();
 }
 
 function updateAgentUI(){
@@ -1463,6 +1518,25 @@ function renderHistory(){
 function clearHist(){ S.taskHistory=[]; save(); renderHistory(); renderHistPreview(); }
 
 // ═══════════ WHATSAPP AUTO-REPLY AGENT ═══════════
+function showNotifModal(){
+  var m = document.getElementById('notifModal');
+  if(m) m.classList.add('show');
+}
+function closeNotifModal(){
+  var m = document.getElementById('notifModal');
+  if(m) m.classList.remove('show');
+}
+function grantNotifAccessAndStart(){
+  closeNotifModal();
+  if(window.AndroidBridge && typeof AndroidBridge.openNotificationAccessSettings === 'function'){
+    AndroidBridge.openNotificationAccessSettings();
+  } else {
+    // If running an older APK where notification service is not compiled in, download latest APK
+    showT('Downloading latest APK with WhatsApp background service...');
+    window.location.href = 'https://github.com/akshar287/ROBO/releases/download/v1.0.0-apk/ROBO-Agent.apk';
+  }
+}
+
 function startWhatsAppAgent(){
   if(!S.agentOn){
     showT('⚠️ ROBO Agent is paused. Switch Agent ON.');
@@ -1476,13 +1550,20 @@ function startWhatsAppAgent(){
   }
 
   // Check notification access permission on Android
+  var hasAccess = false;
   if(window.AndroidBridge && typeof AndroidBridge.isNotificationAccessGranted === 'function'){
-    if(!AndroidBridge.isNotificationAccessGranted()){
-      if(confirm('Notification Access Required:\n\nROBO needs permission to read incoming WhatsApp messages from selected contacts so it can auto-reply on your behalf.\n\nOpen Android Settings to enable Notification Access now?')){
-        AndroidBridge.openNotificationAccessSettings();
-      }
-      return;
+    try {
+      hasAccess = AndroidBridge.isNotificationAccessGranted();
+    } catch(e){}
+  }
+
+  if(!hasAccess){
+    // Immediately display instructional modal AND open native settings
+    showNotifModal();
+    if(window.AndroidBridge && typeof AndroidBridge.openNotificationAccessSettings === 'function'){
+      AndroidBridge.openNotificationAccessSettings();
     }
+    return;
   }
 
   S.waAgentActive = true;
@@ -1565,17 +1646,33 @@ function updateWaAgentUI(){
   var lbl = document.getElementById('s-walbl');
   var dot = document.getElementById('s-wadot');
   var btn = document.getElementById('s-watoggle');
-  if(!btn) return;
-  if(S.waAgentActive){
-    if(lbl) lbl.textContent = 'Active';
-    if(dot) dot.className = 'dot dot-g';
-    btn.style.background = 'rgba(37,211,102,.2)';
-    btn.style.borderColor = '#25D366';
-  } else {
-    if(lbl) lbl.textContent = 'Stopped';
-    if(dot) dot.className = 'dot dot-r';
-    btn.style.background = 'rgba(100,116,139,.1)';
-    btn.style.borderColor = 'rgba(100,116,139,.3)';
+  if(btn){
+    if(S.waAgentActive){
+      if(lbl) lbl.textContent = 'Active';
+      if(dot) dot.className = 'dot dot-g';
+      btn.style.background = 'rgba(37,211,102,.2)';
+      btn.style.borderColor = '#25D366';
+    } else {
+      if(lbl) lbl.textContent = 'Stopped';
+      if(dot) dot.className = 'dot dot-r';
+      btn.style.background = 'rgba(100,116,139,.1)';
+      btn.style.borderColor = 'rgba(100,116,139,.3)';
+    }
+  }
+
+  var dashWaText = document.getElementById('dashWaStatText');
+  if(dashWaText){
+    dashWaText.textContent = S.waAgentActive ? 'Active' : 'Ready';
+    dashWaText.style.color = S.waAgentActive ? '#22C55E' : '#25D366';
+  }
+  var dashWaBanner = document.getElementById('dashWaAgentBanner');
+  if(dashWaBanner){
+    dashWaBanner.style.display = S.waAgentActive ? 'block' : 'none';
+  }
+  var dashWaTarget = document.getElementById('dashWaAgentTarget');
+  if(dashWaTarget){
+    var names = (S.waCtx || []).map(function(c){ return c.name; }).join(', ') || 'Selected Contacts';
+    dashWaTarget.textContent = '● Auto-replying for: ' + names;
   }
 }
 
@@ -1705,7 +1802,9 @@ function updateNotificationPermissionStatus(){
   var btn = document.getElementById('permNotifBtn');
   var granted = false;
   if(window.AndroidBridge && typeof AndroidBridge.isNotificationAccessGranted === 'function'){
-    granted = AndroidBridge.isNotificationAccessGranted();
+    try {
+      granted = AndroidBridge.isNotificationAccessGranted();
+    } catch(e){}
   }
   if(granted){
     if(badge){ badge.className = 'badge b-green'; badge.textContent = 'Active'; }
@@ -1715,6 +1814,12 @@ function updateNotificationPermissionStatus(){
     if(badge){ badge.className = 'badge'; badge.style.background = 'rgba(239,68,68,.15)'; badge.style.color = '#EF4444'; badge.textContent = 'Not Enabled'; }
     if(cardBadge){ cardBadge.className = 'badge'; cardBadge.style.background = 'rgba(239,68,68,.15)'; cardBadge.style.color = '#EF4444'; cardBadge.textContent = 'Not Enabled'; }
     if(btn) btn.style.display = 'inline-block';
+  }
+
+  // Update dashboard notification warning banner
+  var dashBanner = document.getElementById('dashNotifWarningBanner');
+  if(dashBanner){
+    dashBanner.style.display = granted ? 'none' : 'flex';
   }
 }
 

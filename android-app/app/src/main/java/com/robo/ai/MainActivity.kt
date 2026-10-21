@@ -334,6 +334,27 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 Log.d("ROBO_WEBVIEW", "${consoleMessage?.message()} [line ${consoleMessage?.lineNumber()}]")
                 return true
             }
+
+            override fun onJsAlert(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
+                android.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("ROBO")
+                    .setMessage(message ?: "")
+                    .setPositiveButton("OK") { _, _ -> result?.confirm() }
+                    .setOnCancelListener { result?.cancel() }
+                    .show()
+                return true
+            }
+
+            override fun onJsConfirm(view: WebView?, url: String?, message: String?, result: JsResult?): Boolean {
+                android.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("ROBO")
+                    .setMessage(message ?: "")
+                    .setPositiveButton("Open Settings") { _, _ -> result?.confirm() }
+                    .setNegativeButton("Cancel") { _, _ -> result?.cancel() }
+                    .setOnCancelListener { result?.cancel() }
+                    .show()
+                return true
+            }
         }
 
         // Load root index.html
@@ -563,6 +584,12 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 RoboNotificationListenerService.authorizedContacts = emptyList()
             }
             Log.d("ROBO_WA", "WhatsApp Agent active=$active with contacts=${RoboNotificationListenerService.authorizedContacts}")
+            if (active && !isNotificationAccessGranted()) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "⚠️ Notification Access required for WhatsApp Agent. Opening Settings...", Toast.LENGTH_LONG).show()
+                    openNotificationAccessSettings()
+                }
+            }
         }
 
         @JavascriptInterface
@@ -896,6 +923,19 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                val component = android.content.ComponentName(this, RoboNotificationListenerService::class.java)
+                android.service.notification.NotificationListenerService.requestRebind(component)
+            } catch (e: Exception) {
+                // Ignore if not permitted yet
+            }
+        }
+        webView.evaluateJavascript("if (window.updateNotificationPermissionStatus) window.updateNotificationPermissionStatus();", null)
     }
 
     override fun onDestroy() {

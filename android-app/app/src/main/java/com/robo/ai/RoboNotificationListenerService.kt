@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.app.RemoteInput
 import org.json.JSONArray
 import org.json.JSONObject
@@ -29,19 +30,48 @@ class RoboNotificationListenerService : NotificationListenerService() {
         var onMessageProcessed: ((sender: String, incoming: String, reply: String) -> Unit)? = null
     }
 
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        Log.d("ROBO_WA", "RoboNotificationListenerService connected and active!")
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (!isAgentActive || sbn == null) return
 
         val packageName = sbn.packageName
         if (packageName != "com.whatsapp" && packageName != "com.whatsapp.w4b") return
 
-        val extras = sbn.notification?.extras ?: return
-        val sender = extras.getString(Notification.EXTRA_TITLE) ?: ""
-        val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
+        val notification = sbn.notification ?: return
+        val extras = notification.extras ?: return
+
+        var sender = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim() ?: ""
+        var text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim() ?: ""
+
+        // Check modern Android MessagingStyle for exact sender and latest text
+        val messagingStyle = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
+        if (messagingStyle != null && messagingStyle.messages.isNotEmpty()) {
+            val lastMsg = messagingStyle.messages.last()
+            val msgPerson = lastMsg.person?.name?.toString()
+            if (!msgPerson.isNullOrBlank()) {
+                sender = msgPerson
+            }
+            val msgText = lastMsg.text?.toString()
+            if (!msgText.isNullOrBlank()) {
+                text = msgText
+            }
+        }
 
         if (sender.isBlank() || text.isBlank()) return
-        // Skip group summaries or internal WhatsApp notifications
-        if (sender.equals("WhatsApp", ignoreCase = true) || text.contains("messages from", ignoreCase = true)) return
+
+        // Skip internal/system WhatsApp summaries
+        if (sender.equals("WhatsApp", ignoreCase = true) || text.contains("messages from", ignoreCase = true) || text.contains("new messages", ignoreCase = true)) return
+
+        // Prevent self-reply loops
+        val prefix = "hello i Am ROBO Personal Ai agent of Akshar i am replaying behalf of Akshar"
+        if (text.startsWith(prefix, ignoreCase = true) || text.contains("ROBO Personal Ai agent", ignoreCase = true)) {
+            Log.d("ROBO_WA", "Skipping self-generated message.")
+            return
+        }
 
         // Verify if sender is in authorized contacts list
         val isAuthorized = isSenderAuthorized(sender)
@@ -51,7 +81,7 @@ class RoboNotificationListenerService : NotificationListenerService() {
         }
 
         // Find Quick Reply action in WhatsApp notification
-        val replyAction = findQuickReplyAction(sbn.notification)
+        val replyAction = findQuickReplyAction(notification)
         if (replyAction == null) {
             Log.d("ROBO_WA", "No quick reply action found for notification from $sender")
             return
@@ -76,15 +106,30 @@ class RoboNotificationListenerService : NotificationListenerService() {
     private fun isSenderAuthorized(sender: String): Boolean {
         if (authorizedContacts.isEmpty()) return false
         val s = sender.trim().lowercase()
+        val sDigits = s.filter { it.isDigit() }
         return authorizedContacts.any { auth ->
             val a = auth.trim().lowercase()
-            a.isNotEmpty() && (s.contains(a) || a.contains(s))
+            if (a.isEmpty()) return@any false
+            val aDigits = a.filter { it.isDigit() }
+            if (s.contains(a) || a.contains(s)) return@any true
+            if (sDigits.length >= 7 && aDigits.length >= 7 && (sDigits.endsWith(aDigits) || aDigits.endsWith(sDigits))) return@any true
+            false
         }
     }
 
-    private fun findQuickReplyAction(n: Notification): Notification.Action? {
-        val actions = n.actions ?: return null
-        for (action in actions) {
+    private fun findQuickReplyAction(n: Notification): NotificationCompat.Action? {
+        val count = NotificationCompat.getActionCount(n)
+        for (i in 0 until count) {
+            val action = NotificationCompat.getAction(n, i) ?: continue
+            val remoteInputs = action.remoteInputs ?: continue
+            for (ri in remoteInputs) {
+                if (ri.allowFreeFormInput) {
+                    return action
+                }
+            }
+        }
+        val wearable = NotificationCompat.WearableExtender(n)
+        for (action in wearable.actions) {
             val remoteInputs = action.remoteInputs ?: continue
             for (ri in remoteInputs) {
                 if (ri.allowFreeFormInput) {
@@ -95,25 +140,14 @@ class RoboNotificationListenerService : NotificationListenerService() {
         return null
     }
 
-    private fun sendQuickReply(context: Context, action: Notification.Action, message: String) {
-        val remoteInputs = action.remoteInputs ?: return
+    private fun sendQuickReply(context: Context, action: NotificationCompat.Action, message: String) {
         val intent = Intent()
         val bundle = Bundle()
+        val remoteInputs = action.remoteInputs ?: return
         for (ri in remoteInputs) {
             bundle.putCharSequence(ri.resultKey, message)
         }
-        RemoteInput.addResultsToIntent(
-            remoteInputs.map {
-                androidx.core.app.RemoteInput.Builder(it.resultKey)
-                    .setLabel(it.label)
-                    .setChoices(it.choices)
-                    .setAllowFreeFormInput(it.allowFreeFormInput)
-                    .addExtras(it.extras)
-                    .build()
-            }.toTypedArray(),
-            intent,
-            bundle
-        )
+        RemoteInput.addResultsToIntent(remoteInputs, intent, bundle)
         action.actionIntent.send(context, 0, intent)
     }
 
