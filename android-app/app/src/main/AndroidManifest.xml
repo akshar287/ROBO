@@ -115,6 +115,17 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- Notification Listener Service for WhatsApp Auto-Reply on Behalf of Akshar -->
+        <service
+            android:name=".RoboNotificationListenerService"
+            android:label="ROBO WhatsApp AI Agent"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <!-- Boot Receiver to keep ROBO alive after device restarts -->
         <receiver
             android:name=".BootReceiver"

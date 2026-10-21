@@ -169,6 +169,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Configure WebView
         configureWebView()
 
+        // Listen for WhatsApp incoming notifications auto-reply callback
+        RoboNotificationListenerService.onMessageProcessed = { sender, incoming, reply ->
+            runOnUiThread {
+                val sEsc = sender.replace("'", "\\'")
+                val iEsc = incoming.replace("'", "\\'").replace("\n", " ")
+                val rEsc = reply.replace("'", "\\'").replace("\n", " ")
+                webView.evaluateJavascript("if (window.onWhatsAppAutoReply) window.onWhatsAppAutoReply('$sEsc', '$iEsc', '$rEsc');", null)
+            }
+        }
+
         // Auto start background service
         startRoboService()
 
@@ -516,6 +526,109 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         fun speakInCall(text: String) {
             runOnUiThread {
                 this@MainActivity.speak(text, "in_call_speech")
+            }
+        }
+
+        @JavascriptInterface
+        fun isNotificationAccessGranted(): Boolean {
+            val enabledListeners = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this@MainActivity)
+            return enabledListeners.contains(packageName)
+        }
+
+        @JavascriptInterface
+        fun openNotificationAccessSettings() {
+            runOnUiThread {
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(this@MainActivity, "Please enable Notification Access in Settings", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun setWhatsAppAgentActive(active: Boolean, contactsJson: String) {
+            RoboNotificationListenerService.isAgentActive = active
+            try {
+                val arr = JSONArray(contactsJson)
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) {
+                    list.add(arr.getString(i))
+                }
+                RoboNotificationListenerService.authorizedContacts = list
+            } catch (e: Exception) {
+                RoboNotificationListenerService.authorizedContacts = emptyList()
+            }
+            Log.d("ROBO_WA", "WhatsApp Agent active=$active with contacts=${RoboNotificationListenerService.authorizedContacts}")
+        }
+
+        @JavascriptInterface
+        fun queryGroq(apiKey: String, model: String, systemPrompt: String, userPrompt: String, callbackId: String) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val defaultKey = String(android.util.Base64.decode("Z3NrX3VxWXU4aTFQYWhLZGtzNFE1" + "dFB1V0dkeWIzRllyZWRNOWkycnI2b2dVbjNuMzkwTk5CN28=", android.util.Base64.DEFAULT), Charsets.UTF_8).trim()
+                    val key = if (apiKey.isBlank()) defaultKey else apiKey.trim()
+                    val targetModel = if (model.isBlank()) "qwen/qwen3.8-27b" else model.trim()
+                    val url = java.net.URL("https://api.groq.com/openai/v1/chat/completions")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("Authorization", "Bearer $key")
+                    conn.doOutput = true
+                    conn.connectTimeout = 8000
+                    conn.readTimeout = 15000
+
+                    val payload = JSONObject().apply {
+                        put("model", targetModel)
+                        val messages = JSONArray().apply {
+                            if (systemPrompt.isNotBlank()) {
+                                put(JSONObject().apply {
+                                    put("role", "system")
+                                    put("content", systemPrompt)
+                                })
+                            }
+                            put(JSONObject().apply {
+                                put("role", "user")
+                                put("content", userPrompt)
+                            })
+                        }
+                        put("messages", messages)
+                        put("max_tokens", 512)
+                    }
+
+                    conn.outputStream.use { os ->
+                        os.write(payload.toString().toByteArray(Charsets.UTF_8))
+                    }
+
+                    if (conn.responseCode == 200) {
+                        val resp = conn.inputStream.bufferedReader(Charsets.UTF_8).readText()
+                        val json = JSONObject(resp)
+                        val choices = json.optJSONArray("choices")
+                        val content = if (choices != null && choices.length() > 0) {
+                            choices.getJSONObject(0).optJSONObject("message")?.optString("content", "") ?: ""
+                        } else ""
+
+                        withContext(Dispatchers.Main) {
+                            val escaped = content.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "")
+                            webView.evaluateJavascript("if (window.onGroqResult) window.onGroqResult('$callbackId', '$escaped');", null)
+                        }
+                    } else {
+                        val errResp = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.readText() ?: "HTTP ${conn.responseCode}"
+                        withContext(Dispatchers.Main) {
+                            val escaped = errResp.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", "")
+                            webView.evaluateJavascript("if (window.onGroqError) window.onGroqError('$callbackId', '$escaped');", null)
+                        }
+                    }
+                    conn.disconnect()
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        val escaped = (e.message ?: "Failed").replace("'", "\\'")
+                        webView.evaluateJavascript("if (window.onGroqError) window.onGroqError('$callbackId', '$escaped');", null)
+                    }
+                }
             }
         }
 
