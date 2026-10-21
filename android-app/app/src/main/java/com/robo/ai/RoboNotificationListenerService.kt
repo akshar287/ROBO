@@ -13,12 +13,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 
 class RoboNotificationListenerService : NotificationListenerService() {
 
     companion object {
         @Volatile
         var isAgentActive: Boolean = false
+            set(value) {
+                field = value
+                if (!value) {
+                    greetedSenders.clear()
+                }
+            }
+
+        val greetedSenders = ConcurrentHashMap.newKeySet<String>()
 
         @Volatile
         var authorizedContacts: List<String> = emptyList()
@@ -67,8 +76,8 @@ class RoboNotificationListenerService : NotificationListenerService() {
         if (sender.equals("WhatsApp", ignoreCase = true) || text.contains("messages from", ignoreCase = true) || text.contains("new messages", ignoreCase = true)) return
 
         // Prevent self-reply loops
-        val prefix = "hello i Am ROBO Personal Ai agent of Akshar i am replaying behalf of Akshar"
-        if (text.startsWith(prefix, ignoreCase = true) || text.contains("ROBO Personal Ai agent", ignoreCase = true)) {
+        val prefixNoEmoji = "hello i Am ROBO"
+        if (text.startsWith(prefixNoEmoji, ignoreCase = true) || text.contains("ROBO 🤖 Personal Ai agent", ignoreCase = true) || text.contains("ROBO Personal Ai agent", ignoreCase = true)) {
             Log.d("ROBO_WA", "Skipping self-generated message.")
             return
         }
@@ -87,11 +96,15 @@ class RoboNotificationListenerService : NotificationListenerService() {
             return
         }
 
-        Log.d("ROBO_WA", "Authorized WhatsApp message from '$sender': '$text'. Generating Groq reply...")
+        // Determine if this is the first reply to this contact in the current session
+        val senderKey = sender.trim().lowercase()
+        val isFirstMessage = greetedSenders.add(senderKey)
+
+        Log.d("ROBO_WA", "Authorized WhatsApp message from '$sender' (isFirstMessage=$isFirstMessage): '$text'. Generating Groq reply...")
 
         Thread {
             try {
-                val replyText = generateGroqReply(sender, text)
+                val replyText = generateGroqReply(sender, text, isFirstMessage)
                 if (replyText.isNotBlank()) {
                     sendQuickReply(applicationContext, replyAction, replyText)
                     Log.d("ROBO_WA", "Auto-replied to $sender: '$replyText'")
@@ -152,8 +165,8 @@ class RoboNotificationListenerService : NotificationListenerService() {
         pendingIntent.send(context, 0, intent)
     }
 
-    private fun generateGroqReply(sender: String, message: String): String {
-        val prefix = "hello i Am ROBO Personal Ai agent of Akshar i am replaying behalf of Akshar "
+    private fun generateGroqReply(sender: String, message: String, isFirstMessage: Boolean): String {
+        val firstPrefix = "hello i Am ROBO 🤖 Personal Ai agent of Akshar i am replaying behalf of Akshar "
         try {
             val url = URL("https://api.groq.com/openai/v1/chat/completions")
             val conn = url.openConnection() as HttpURLConnection
@@ -164,14 +177,24 @@ class RoboNotificationListenerService : NotificationListenerService() {
             conn.connectTimeout = 8000
             conn.readTimeout = 12000
 
-            val prompt = "Incoming WhatsApp message from $sender: \"$message\".\nGenerate a relevant, polite 1-2 sentence reply on behalf of Akshar.\nYou must start your response with: \"$prefix\""
+            val prompt = if (isFirstMessage) {
+                "Incoming WhatsApp message from $sender: \"$message\".\nGenerate a relevant, polite 1-2 sentence reply on behalf of Akshar.\nYou MUST start your response with: \"$firstPrefix\""
+            } else {
+                "Incoming WhatsApp message from $sender: \"$message\".\nGenerate a direct, relevant, polite 1-2 sentence reply on behalf of Akshar.\nDo NOT introduce yourself again. Do NOT include 'hello i Am ROBO' or any self-introduction prefix. Only provide the relevant contextual reply directly."
+            }
+
+            val systemContent = if (isFirstMessage) {
+                "You are ROBO 🤖, the personal AI agent of Akshar. Always start your response with: '$firstPrefix'"
+            } else {
+                "You are ROBO 🤖, the personal AI agent of Akshar. You already introduced yourself to $sender in the previous message. Now give ONLY the direct, relevant reply on behalf of Akshar without any greeting prefix."
+            }
 
             val payload = JSONObject().apply {
                 put("model", "qwen/qwen3.8-27b")
                 val msgs = JSONArray().apply {
                     put(JSONObject().apply {
                         put("role", "system")
-                        put("content", "You are ROBO, the personal AI agent of Akshar. Always start your response with: '$prefix'")
+                        put("content", systemContent)
                     })
                     put(JSONObject().apply {
                         put("role", "user")
@@ -193,8 +216,14 @@ class RoboNotificationListenerService : NotificationListenerService() {
                 if (choices != null && choices.length() > 0) {
                     var content = choices.getJSONObject(0).optJSONObject("message")?.optString("content", "") ?: ""
                     content = content.trim()
-                    if (!content.startsWith(prefix, ignoreCase = true)) {
-                        content = "$prefix$content"
+                    if (isFirstMessage) {
+                        if (!content.startsWith(firstPrefix, ignoreCase = true)) {
+                            content = content.replace(Regex("^(hello\\s+i\\s+am\\s+robo.*?behalf\\s+of\\s+akshar\\s*)", RegexOption.IGNORE_CASE), "").trim()
+                            content = "$firstPrefix$content"
+                        }
+                    } else {
+                        // Strip any accidental prefix so subsequent replies are strictly relevant text
+                        content = content.replace(Regex("^(hello\\s+i\\s+am\\s+robo.*?behalf\\s+of\\s+akshar\\s*)", RegexOption.IGNORE_CASE), "").trim()
                     }
                     return content
                 }
@@ -202,6 +231,10 @@ class RoboNotificationListenerService : NotificationListenerService() {
         } catch (e: Exception) {
             Log.e("ROBO_WA", "Groq reply generation failed", e)
         }
-        return "$prefix Akshar has received your message and will reply to you shortly!"
+        return if (isFirstMessage) {
+            "$firstPrefix Akshar has received your message and will reply to you shortly!"
+        } else {
+            "Akshar has received your message and will reply to you shortly!"
+        }
     }
 }

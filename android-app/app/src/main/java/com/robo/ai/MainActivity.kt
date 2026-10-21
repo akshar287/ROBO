@@ -573,6 +573,9 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         @JavascriptInterface
         fun setWhatsAppAgentActive(active: Boolean, contactsJson: String) {
             RoboNotificationListenerService.isAgentActive = active
+            if (!active) {
+                RoboNotificationListenerService.greetedSenders.clear()
+            }
             try {
                 val arr = JSONArray(contactsJson)
                 val list = mutableListOf<String>()
