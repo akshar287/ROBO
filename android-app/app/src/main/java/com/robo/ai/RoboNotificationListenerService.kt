@@ -144,11 +144,12 @@ class RoboNotificationListenerService : NotificationListenerService() {
         val intent = Intent()
         val bundle = Bundle()
         val remoteInputs = action.remoteInputs ?: return
+        val pendingIntent = action.actionIntent ?: return
         for (ri in remoteInputs) {
             bundle.putCharSequence(ri.resultKey, message)
         }
         RemoteInput.addResultsToIntent(remoteInputs, intent, bundle)
-        action.actionIntent.send(context, 0, intent)
+        pendingIntent.send(context, 0, intent)
     }
 
     private fun generateGroqReply(sender: String, message: String): String {
