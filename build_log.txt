@@ -1,0 +1,74 @@
+Downloading https://services.gradle.org/distributions/gradle-8.6-bin.zip
+............10%.............20%............30%.............40%.............50%............60%.............70%.............80%............90%.............100%
+
+Welcome to Gradle 8.6!
+
+Here are the highlights of this release:
+ - Configurable encryption key for configuration cache
+ - Build init improvements
+ - Build authoring improvements
+
+For more details see https://docs.gradle.org/8.6/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.6/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:compressDebugAssets
+> Task :app:mergeDebugJniLibFolders
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:processDebugManifestForPackage
+> Task :app:mergeLibDexDebug
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:processDebugResources
+> Task :app:validateSigningDebug
+> Task :app:mergeExtDexDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:89:46 'stat_sys_phone_call: Int' is deprecated. Deprecated in Java
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:140:20 'setter for isSpeakerphoneOn: Boolean' is deprecated. Deprecated in Java
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:267:13 'setter for allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:268:13 'setter for allowUniversalAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:788:17 'startActivityForResult(Intent, Int): Unit' is deprecated. Deprecated in Java
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:840:30 This declaration overrides deprecated member but not marked as deprecated itself. Please add @Deprecated annotation or suppress. See https://youtrack.jetbrains.com/issue/KT-47902 for details
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/MainActivity.kt:927:19 'onBackPressed(): Unit' is deprecated. Deprecated in Java
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/WebSocketClientManager.kt:37:33 The corresponding parameter in the supertype 'WebSocketListener' is named 'webSocket'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/WebSocketClientManager.kt:43:36 The corresponding parameter in the supertype 'WebSocketListener' is named 'webSocket'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/WebSocketClientManager.kt:61:35 The corresponding parameter in the supertype 'WebSocketListener' is named 'webSocket'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/ROBO/ROBO/android-app/app/src/main/java/com/robo/ai/WebSocketClientManager.kt:66:36 The corresponding parameter in the supertype 'WebSocketListener' is named 'webSocket'. This may cause problems when calling this function with named arguments.
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 1m 12s
+34 actionable tasks: 34 executed
